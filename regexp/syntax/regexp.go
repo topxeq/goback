@@ -1,0 +1,459 @@
+package syntax
+
+import (
+	"bytes"
+	"io"
+	"strconv"
+	"unicode"
+	"unicode/utf8"
+)
+
+type regexp struct {
+	root        node
+	expr        string
+	subexpNames []string
+	subexpMap   map[string]int
+	longest     bool
+}
+
+func (re *regexp) NumSubexp() int {
+	return len(re.subexpNames) - 1
+}
+
+func (re *regexp) Match(b []byte) bool {
+	return len(re.Find(b)) > 0
+}
+
+func (re *regexp) MatchString(s string) bool {
+	return re.Match([]byte(s))
+}
+
+func (re *regexp) MatchReader(r io.RuneReader) bool {
+	var b []byte
+	for {
+		r, s, err := r.ReadRune()
+		if err != nil {
+			break
+		}
+		lit := make([]byte, s)
+		utf8.EncodeRune(lit[:], r)
+		b = append(b, lit...)
+		if re.Match(b) {
+			return true
+		}
+	}
+	return false
+}
+
+func (re *regexp) Find(b []byte) []byte {
+	loc := re.FindIndex(b)
+	if len(loc) == 0 {
+		return nil
+	}
+	return b[loc[0]:loc[1]]
+}
+
+func (re *regexp) FindIndex(b []byte) []int {
+	loc := re.FindSubmatchIndex(b)
+	if len(loc) == 0 {
+		return nil
+	}
+	return loc[:2]
+}
+
+func (re *regexp) FindReaderIndex(r io.RuneReader) []int {
+	var b []byte
+	for {
+		r, s, err := r.ReadRune()
+		if err != nil {
+			break
+		}
+		lit := make([]byte, s)
+		utf8.EncodeRune(lit[:], r)
+		b = append(b, lit...)
+		loc := re.FindIndex(b)
+		if len(loc) > 0 {
+			return loc
+		}
+	}
+	return nil
+}
+
+func (re *regexp) FindSubmatch(b []byte) [][]byte {
+	var ret [][]byte
+	loc := re.FindSubmatchIndex(b)
+	for i := 0; i < len(loc)/2; i++ {
+		ret = append(ret, b[loc[i*2]:loc[i*2+1]])
+	}
+	return ret
+}
+
+func (re *regexp) FindSubmatchIndex(b []byte) []int {
+	return re.findSubmatchIndex(b, 0)
+}
+
+func (re *regexp) findSubmatchIndex(b []byte, f int) []int {
+	offset := f
+	for {
+		f := re.root.Fiber(input{b: b[offset:], o: b, begin: offset})
+		o, err := f.Resume()
+		if err == nil {
+			if re.longest {
+				for {
+					a, err := f.Resume()
+					if err != nil {
+						break
+					} else if len(a.b) > len(o.b) {
+						o = a
+					}
+				}
+			}
+			loc := []int{offset, offset + len(o.b)}
+			for i := 1; i <= re.NumSubexp(); i++ {
+				if sub, ok := o.sub.i[i]; ok {
+					loc = append(loc, sub.begin, sub.begin+len(sub.b))
+				} else {
+					loc = append(loc, -1, -1)
+				}
+			}
+			return loc
+		}
+		if len(b[offset:]) == 0 {
+			break
+		}
+		_, s := utf8.DecodeRune(b[offset:])
+		offset += s
+	}
+	return nil
+}
+
+func (re *regexp) FindReaderSubmatchIndex(r io.RuneReader) []int {
+	var b []byte
+	for {
+		r, s, err := r.ReadRune()
+		if err != nil {
+			break
+		}
+		lit := make([]byte, s)
+		utf8.EncodeRune(lit[:], r)
+		b = append(b, lit...)
+		loc := re.FindSubmatchIndex(b)
+		if len(loc) > 0 {
+			return loc
+		}
+	}
+	return nil
+}
+
+func (re *regexp) FindAllString(s string, n int) []string {
+	var ret []string
+	for _, b := range re.FindAll([]byte(s), n) {
+		ret = append(ret, string(b))
+	}
+	return ret
+}
+
+func (re *regexp) FindAllStringIndex(s string, n int) [][]int {
+	return re.FindAllIndex([]byte(s), n)
+}
+
+func (re *regexp) FindAll(b []byte, n int) [][]byte {
+	var ret [][]byte
+	for _, loc := range re.FindAllIndex(b, n) {
+		ret = append(ret, b[loc[0]:loc[1]])
+	}
+	return ret
+}
+
+func (re *regexp) FindAllIndex(b []byte, n int) [][]int {
+	var ret [][]int
+	for _, loc := range re.FindAllSubmatchIndex(b, n) {
+		ret = append(ret, loc[:2])
+	}
+	return ret
+}
+
+func (re *regexp) FindAllStringSubmatchIndex(s string, n int) [][]int {
+	return re.FindAllSubmatchIndex([]byte(s), n)
+}
+
+func (re *regexp) FindAllStringSubmatch(s string, n int) [][]string {
+	var ret [][]string
+	for _, m := range re.FindAllSubmatch([]byte(s), n) {
+		var sub []string
+		for _, b := range m {
+			sub = append(sub, string(b))
+		}
+		ret = append(ret, sub)
+	}
+	return ret
+}
+
+func (re *regexp) FindAllSubmatch(b []byte, n int) [][][]byte {
+	var ret [][][]byte
+	for _, m := range re.FindAllSubmatchIndex(b, n) {
+		var sub [][]byte
+		for i := 0; i < len(m)/2; i++ {
+			sub = append(sub, b[m[i*2]:m[i*2+1]])
+		}
+		ret = append(ret, sub)
+	}
+	return ret
+}
+
+func (re *regexp) FindAllSubmatchIndex(b []byte, n int) [][]int {
+	var ret [][]int
+	offset := 0
+	for i := 0; i < n || n < 0; i++ {
+		m := re.findSubmatchIndex(b, offset)
+		if len(m) == 0 {
+			break
+		}
+		last := len(ret) - 1
+		if m[0] == m[1] && last >= 0 {
+			if m[0] != ret[last][1] {
+				ret = append(ret, m)
+			}
+		} else {
+			ret = append(ret, m)
+		}
+		if len(b[offset:]) == 0 {
+			break
+		}
+		if m[1] > offset {
+			offset = m[1]
+		} else {
+			_, s := utf8.DecodeRune(b[offset:])
+			offset += s
+		}
+	}
+	return ret
+}
+
+func (re *regexp) FindString(s string) string {
+	return string(re.Find([]byte(s)))
+}
+
+func (re *regexp) FindStringIndex(s string) []int {
+	return re.FindIndex([]byte(s))
+}
+
+func (re *regexp) FindStringSubmatch(s string) []string {
+	var ret []string
+	for _, b := range re.FindSubmatch([]byte(s)) {
+		ret = append(ret, string(b))
+	}
+	return ret
+}
+
+func (re *regexp) FindStringSubmatchIndex(s string) []int {
+	return re.FindSubmatchIndex([]byte(s))
+}
+
+func (re *regexp) ReplaceAllFunc(src []byte, repl func([]byte) []byte) []byte {
+	sub, sep, _ := re.split(src)
+	if len(sep) == 0 {
+		return append([]byte(nil), src...)
+	}
+	var ret []byte
+	for i, s := range sub[:len(sub)-1] {
+		ret = append(append(ret, s...), repl(sep[i])...)
+	}
+	ret = append(ret, sub[len(sub)-1]...)
+	return ret
+}
+
+func (re *regexp) ReplaceAllStringFunc(src string, repl func(string) string) string {
+	return string(re.ReplaceAllFunc([]byte(src), func(b []byte) []byte {
+		return []byte(repl(string(b)))
+	}))
+}
+
+func (re *regexp) ReplaceAllLiteral(src, repl []byte) []byte {
+	return re.ReplaceAllFunc(src, func([]byte) []byte {
+		return repl
+	})
+}
+
+func (re *regexp) ReplaceAllLiteralString(src, repl string) string {
+	return string(re.ReplaceAllLiteral([]byte(src), []byte(repl)))
+}
+
+func (re *regexp) ReplaceAll(src, repl []byte) []byte {
+	sub, sep, match := re.split(src)
+	if len(sep) == 0 {
+		return append([]byte(nil), src...)
+	}
+	var ret []byte
+	for i, s := range sub[:len(sub)-1] {
+		ret = append(append(ret, s...), re.Expand(nil, repl, src, match[i])...)
+	}
+	ret = append(ret, sub[len(sub)-1]...)
+	return ret
+}
+
+func (re *regexp) ReplaceAllString(src, repl string) string {
+	return string(re.ReplaceAll([]byte(src), []byte(repl)))
+}
+
+func (re *regexp) split(b []byte) ([][]byte, [][]byte, [][]int) {
+	var idx [][]int
+	var sep [][]byte
+	var match [][]int
+	before := 0
+	for _, i := range re.FindAllSubmatchIndex(b, -1) {
+		idx = append(idx, []int{before, i[0]})
+		sep = append(sep, b[i[0]:i[1]])
+		match = append(match, i)
+		before = i[1]
+	}
+	idx = append(idx, []int{before, len(b)})
+	var sub [][]byte
+	for _, i := range idx {
+		sub = append(sub, b[i[0]:i[1]])
+	}
+	return sub, sep, match
+}
+
+func reverseRange(idx [][]int, size int, n int) [][]int {
+	var ret [][]int
+	before := 0
+	for _, i := range idx {
+		r := []int{before, i[0]}
+		if r[0] != i[0] || r[1] != i[1] {
+			ret = append(ret, r)
+		}
+		before = i[1]
+	}
+	last := idx[len(idx)-1]
+	r := []int{last[1], size}
+	if r[0] != last[0] || r[1] != last[1] {
+		ret = append(ret, r)
+	}
+	if n > 0 && len(ret) > n {
+		ret = append(ret[:n-1], []int{ret[n-1][0], size})
+	}
+	return ret
+}
+
+func (re *regexp) Split(s string, n int) []string {
+	if n == 0 {
+		return nil
+	} else if n == 1 {
+		return []string{s}
+	}
+	var ret []string
+	for _, i := range reverseRange(re.FindAllStringIndex(s, n), len(s), n) {
+		ret = append(ret, s[i[0]:i[1]])
+	}
+	return ret
+}
+
+func (re *regexp) Expand(dst []byte, template []byte, src []byte, match []int) []byte {
+	var res []byte
+	meta := false
+	runes := bytes.Runes(template)
+	for i := 0; i < len(runes); i++ {
+		switch {
+		case runes[i] == '$':
+			if meta {
+				res = append(res, '$')
+			}
+			meta = !meta
+		default:
+			if meta {
+				meta = false
+				name, l := re.parseTemplate(runes[i:])
+				if l > 0 {
+					idx, err := strconv.Atoi(name)
+					if err == nil && strconv.Itoa(idx) == name {
+						if idx < len(match)/2 {
+							res = append(res, src[match[idx*2]:match[idx*2+1]]...)
+						}
+					} else {
+						if idx, ok := re.subexpMap[name]; ok {
+							res = append(res, src[match[idx*2]:match[idx*2+1]]...)
+						}
+					}
+					i += l - 1
+					continue
+				}
+			}
+			var lit [utf8.UTFMax]byte
+			l := utf8.EncodeRune(lit[:], runes[i])
+			res = append(res, lit[:l]...)
+		}
+	}
+	copy(dst, res)
+	return res
+}
+
+func (re *regexp) ExpandString(dst []byte, template string, src string, match []int) []byte {
+	return re.Expand(dst, []byte(template), []byte(src), match)
+}
+
+func (re *regexp) parseTemplate(exp []rune) (string, int) {
+	if len(exp) == 0 {
+		return "", 0
+	}
+	if exp[0] == '{' {
+		for i, r := range exp[1:] {
+			if r == '}' {
+				name, l := re.parseTemplate(exp[1 : i+1])
+				return name, l + 2
+			}
+		}
+	} else {
+		var name string
+		for i, r := range exp {
+			if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' {
+				var lit [utf8.UTFMax]byte
+				l := utf8.EncodeRune(lit[:], r)
+				name += string(lit[:l])
+			} else {
+				return name, i
+			}
+		}
+		return name, len(exp)
+	}
+	return "", 0
+}
+
+func (re *regexp) SubexpNames() []string {
+	return re.subexpNames
+}
+
+func (re *regexp) LiteralPrefix() (prefix string, complete bool) {
+	// TODO: calculate literal prefix
+	return "", false
+}
+
+func (re *regexp) Longest() {
+	re.longest = true
+}
+
+func (re *regexp) String() string {
+	return re.expr
+}
+
+// Compile parses a regular expression and returns, if successful,
+// a Regexp object that can be used to match against text.
+func Compile(expr string) (*regexp, bool, error) {
+	p := parser{}
+	n, err := p.parse([]byte(expr))
+	if err != nil {
+		return nil, false, err
+	}
+	m := make(map[string]int)
+	for i, n := range p.subexpNames {
+		if len(n) > 0 {
+			m[n] = i
+		}
+	}
+	return &regexp{
+		root:        n,
+		expr:        expr,
+		subexpNames: p.subexpNames,
+		subexpMap:   m,
+	}, n.IsExtended(), nil
+}
