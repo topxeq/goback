@@ -3,6 +3,7 @@ package syntax
 import (
 	"bytes"
 	"io"
+	"regexp/syntax"
 	"strconv"
 	"unicode"
 	"unicode/utf8"
@@ -438,14 +439,15 @@ func (re *regexp) String() string {
 
 // Compile parses a regular expression and returns, if successful,
 // a Regexp object that can be used to match against text.
-func Compile(expr string) (*regexp, bool, error) {
+func Compile(expr string) (re *regexp, extended bool, err error) {
 	p := parser{}
-	n, err := p.parse([]byte(expr))
+	flags := syntax.OneLine | syntax.PerlX
+	n, subexp, err := p.parse([]byte(expr), flags)
 	if err != nil {
 		return nil, false, err
 	}
 	m := make(map[string]int)
-	for i, n := range p.subexpNames {
+	for i, n := range subexp {
 		if len(n) > 0 {
 			m[n] = i
 		}
@@ -453,7 +455,7 @@ func Compile(expr string) (*regexp, bool, error) {
 	return &regexp{
 		root:        n,
 		expr:        expr,
-		subexpNames: p.subexpNames,
+		subexpNames: subexp,
 		subexpMap:   m,
 	}, n.IsExtended(), nil
 }

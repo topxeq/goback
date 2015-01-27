@@ -13,7 +13,7 @@ type parser struct {
 	subexpNames []string
 }
 
-func (p *parser) parse(reg []byte) (n node, err error) {
+func (p *parser) parse(reg []byte, flags syntax.Flags) (n node, subexp []string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			if e, ok := r.(syntax.Error); ok {
@@ -23,6 +23,9 @@ func (p *parser) parse(reg []byte) (n node, err error) {
 			}
 		}
 	}()
+
+	p.groupIndex = 0
+	p.subexpNames = nil
 
 	runes := make([]rune, 0, len(reg))
 	b := reg
@@ -36,7 +39,7 @@ func (p *parser) parse(reg []byte) (n node, err error) {
 	}
 
 	p.groupIndex = -1
-	return p.group(runes, syntax.OneLine|syntax.PerlX), nil
+	return p.group(runes, flags), p.subexpNames, nil
 }
 
 func parseBackref(exp []rune) (string, int) {
