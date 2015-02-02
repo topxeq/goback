@@ -8,6 +8,10 @@ goback provides extended regexp syntax, such as Back reference.
 
 The implementation does **NOT** guarantee linear processing time.
 
+## Syntax
+
+See http://godoc.org/github.com/h2so5/goback/regexp/syntax
+
 ## Examples
 
 ### Back reference
