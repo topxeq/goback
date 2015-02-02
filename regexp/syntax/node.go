@@ -511,7 +511,7 @@ func (f *wordBoundaryFiber) Resume() (output, error) {
 	if f.cnt == 0 {
 		f.cnt++
 		match := false
-		if len(f.I.b) > 0 && f.I.begin > 0 && isAsciiWord(rune(f.I.b[0])) != isAsciiWord(rune(f.I.o[f.I.begin-1])) {
+		if len(f.I.b) > 0 && f.I.begin > 0 && isASCIIWord(rune(f.I.b[0])) != isASCIIWord(rune(f.I.o[f.I.begin-1])) {
 			match = true
 		}
 		if f.node.Reversed {

@@ -47,7 +47,7 @@ func (m whitespaceMatcher) Match(r rune, flags syntax.Flags) bool {
 	}
 }
 
-func isAsciiWord(r rune) bool {
+func isASCIIWord(r rune) bool {
 	return ('0' <= r && r <= '9') ||
 		('a' <= r && r <= 'z') ||
 		('A' <= r && r <= 'Z') || r == '_'
@@ -56,7 +56,7 @@ func isAsciiWord(r rune) bool {
 type wordMatcher struct{}
 
 func (m wordMatcher) Match(r rune, flags syntax.Flags) bool {
-	return isAsciiWord(r)
+	return isASCIIWord(r)
 }
 
 type alphanumericMatcher struct {
@@ -72,11 +72,7 @@ type alphabeticMatcher struct {
 }
 
 func (m alphabeticMatcher) Match(r rune, flags syntax.Flags) bool {
-	if ('a' <= r && r <= 'z') || ('A' <= r && r <= 'Z') {
-		return true
-	} else {
-		return false
-	}
+	return ('a' <= r && r <= 'z') || ('A' <= r && r <= 'Z')
 }
 
 type asciiMatcher struct {
@@ -121,7 +117,7 @@ func (m printableMatcher) Match(r rune, flags syntax.Flags) bool {
 	return ' ' <= r && r <= '~'
 }
 
-func isAsciiPunct(r rune) bool {
+func isASCIIPunct(r rune) bool {
 	return ('!' <= r && r <= '/') || (':' <= r && r <= '@') ||
 		('[' <= r && r <= '`') || ('{' <= r && r <= '~')
 }
@@ -130,7 +126,7 @@ type punctuationMatcher struct {
 }
 
 func (m punctuationMatcher) Match(r rune, flags syntax.Flags) bool {
-	return isAsciiPunct(r)
+	return isASCIIPunct(r)
 }
 
 type upperMatcher struct {
@@ -140,7 +136,7 @@ func (m upperMatcher) Match(r rune, flags syntax.Flags) bool {
 	return 'A' <= r && r <= 'Z'
 }
 
-func isAsciiXdigit(r rune) bool {
+func isASCIIXdigit(r rune) bool {
 	return ('0' <= r && r <= '9') ||
 		('a' <= r && r <= 'f') ||
 		('A' <= r && r <= 'F')
@@ -150,5 +146,5 @@ type xdigitMatcher struct {
 }
 
 func (m xdigitMatcher) Match(r rune, flags syntax.Flags) bool {
-	return isAsciiXdigit(r)
+	return isASCIIXdigit(r)
 }

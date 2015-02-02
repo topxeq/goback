@@ -350,7 +350,7 @@ func (p *parser) group(runes []rune, flags syntax.Flags) node {
 				n := wordBoundaryNode{Reversed: true}
 				r = r[1:]
 				g.N = append(g.N, n)
-			case isAsciiPunct(r[0]):
+			case isASCIIPunct(r[0]):
 				n, size := p.fetchLiteral(r, flags)
 				r = r[size:]
 				g.N = append(g.N, n)
@@ -490,7 +490,7 @@ func (p *parser) fetchHexCode(runes []rune, flags syntax.Flags) (node, int) {
 		for i, r := range runes[2:] {
 			if r == '}' {
 				size = i + 3
-			} else if isAsciiXdigit(r) {
+			} else if isASCIIXdigit(r) {
 				hex = append(hex, byte(r))
 			} else {
 				panic(newErrorRunes(syntax.ErrInvalidEscape, append([]rune{'\\'}, runes[:i+1]...)))
@@ -500,7 +500,7 @@ func (p *parser) fetchHexCode(runes []rune, flags syntax.Flags) (node, int) {
 			panic(newErrorRunes(syntax.ErrInvalidEscape, append([]rune{'\\'}, runes...)))
 		}
 	} else {
-		if isAsciiXdigit(runes[1]) && isAsciiXdigit(runes[2]) {
+		if isASCIIXdigit(runes[1]) && isASCIIXdigit(runes[2]) {
 			hex = []byte{byte(runes[1]), byte(runes[2])}
 			size = 3
 		} else {
