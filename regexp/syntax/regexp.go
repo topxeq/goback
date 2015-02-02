@@ -2,7 +2,6 @@ package syntax
 
 import (
 	"bytes"
-	"io"
 	"regexp/syntax"
 	"strconv"
 	"unicode"
@@ -29,23 +28,6 @@ func (re *regexp) MatchString(s string) bool {
 	return re.Match([]byte(s))
 }
 
-func (re *regexp) MatchReader(r io.RuneReader) bool {
-	var b []byte
-	for {
-		r, s, err := r.ReadRune()
-		if err != nil {
-			break
-		}
-		lit := make([]byte, s)
-		utf8.EncodeRune(lit[:], r)
-		b = append(b, lit...)
-		if re.Match(b) {
-			return true
-		}
-	}
-	return false
-}
-
 func (re *regexp) Find(b []byte) []byte {
 	loc := re.FindIndex(b)
 	if len(loc) == 0 {
@@ -60,24 +42,6 @@ func (re *regexp) FindIndex(b []byte) []int {
 		return nil
 	}
 	return loc[:2]
-}
-
-func (re *regexp) FindReaderIndex(r io.RuneReader) []int {
-	var b []byte
-	for {
-		r, s, err := r.ReadRune()
-		if err != nil {
-			break
-		}
-		lit := make([]byte, s)
-		utf8.EncodeRune(lit[:], r)
-		b = append(b, lit...)
-		loc := re.FindIndex(b)
-		if len(loc) > 0 {
-			return loc
-		}
-	}
-	return nil
 }
 
 func (re *regexp) FindSubmatch(b []byte) [][]byte {
@@ -124,24 +88,6 @@ func (re *regexp) findSubmatchIndex(b []byte, f int) []int {
 		}
 		_, s := utf8.DecodeRune(b[offset:])
 		offset += s
-	}
-	return nil
-}
-
-func (re *regexp) FindReaderSubmatchIndex(r io.RuneReader) []int {
-	var b []byte
-	for {
-		r, s, err := r.ReadRune()
-		if err != nil {
-			break
-		}
-		lit := make([]byte, s)
-		utf8.EncodeRune(lit[:], r)
-		b = append(b, lit...)
-		loc := re.FindSubmatchIndex(b)
-		if len(loc) > 0 {
-			return loc
-		}
 	}
 	return nil
 }

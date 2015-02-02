@@ -7,7 +7,6 @@ package regexp
 // If you don't use extended syntax, the golang built-in regex engine will be used transparently.
 
 import (
-	"io"
 	"regexp"
 
 	"github.com/h2so5/goback/regexp/syntax"
@@ -23,10 +22,6 @@ type Regexp interface {
 	// MatchString reports whether the Regexp matches the string s.
 	MatchString(s string) bool
 
-	// MatchReader reports whether the Regexp matches the text read by the
-	// RuneReader.
-	MatchReader(r io.RuneReader) bool
-
 	// Find returns a slice holding the text of the leftmost match in b of the regular expression.
 	// A return value of nil indicates no match.
 	Find(b []byte) []byte
@@ -36,13 +31,6 @@ type Regexp interface {
 	// b[loc[0]:loc[1]].
 	// A return value of nil indicates no match.
 	FindIndex(b []byte) []int
-
-	// FindReaderIndex returns a two-element slice of integers defining the
-	// location of the leftmost match of the regular expression in text read from
-	// the RuneReader.  The match text was found in the input stream at
-	// byte offset loc[0] through loc[1]-1.
-	// A return value of nil indicates no match.
-	FindReaderIndex(r io.RuneReader) (loc []int)
 
 	// FindSubmatch returns a slice of slices holding the text of the leftmost
 	// match of the regular expression in b and the matches, if any, of its
@@ -57,13 +45,6 @@ type Regexp interface {
 	// in the package comment.
 	// A return value of nil indicates no match.
 	FindSubmatchIndex(b []byte) []int
-
-	// FindReaderSubmatchIndex returns a slice holding the index pairs
-	// identifying the leftmost match of the regular expression of text read by
-	// the RuneReader, and the matches, if any, of its subexpressions, as defined
-	// by the 'Submatch' and 'Index' descriptions in the package comment.  A
-	// return value of nil indicates no match.
-	FindReaderSubmatchIndex(r io.RuneReader) []int
 
 	// FindString returns a string holding the text of the leftmost match in s of the regular
 	// expression.  If there is no match, the return value is an empty string,
@@ -288,17 +269,6 @@ func Match(pattern string, b []byte) (matched bool, err error) {
 		return false, err
 	}
 	return re.Match(b), nil
-}
-
-// MatchReader checks whether a textual regular expression matches the text
-// read by the RuneReader.  More complicated queries need to use Compile and
-// the full Regexp interface.
-func MatchReader(pattern string, r io.RuneReader) (matched bool, err error) {
-	re, err := Compile(pattern)
-	if err != nil {
-		return false, err
-	}
-	return re.MatchReader(r), nil
 }
 
 // MatchString checks whether a textual regular expression
