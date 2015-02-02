@@ -399,17 +399,6 @@ func TestAtomic(t *testing.T) {
 	}
 }
 
-func TestComment(t *testing.T) {
-	assert := assert.New(t)
-
-	{
-		str := `"正規表現"`
-		exp := `"(?#.*)(?:(?>.*)|(.*))"`
-		r := mustCompile(exp)
-		assert.Equal([][]int{[]int{0, 14, 1, 13}}, r.FindAllStringSubmatchIndex(str, -1))
-	}
-}
-
 func TestLookahead(t *testing.T) {
 	assert := assert.New(t)
 
