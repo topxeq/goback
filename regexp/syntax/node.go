@@ -111,6 +111,9 @@ func (n groupNode) Fiber(i input) fiber {
 }
 
 func (n groupNode) IsExtended() bool {
+	if n.Atomic {
+		return true
+	}
 	for _, e := range n.N {
 		if e.IsExtended() {
 			return true

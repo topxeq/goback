@@ -55,10 +55,3 @@ re := regexp.MustCompile(`a(?=[0-9]{3})1`)
 fmt.Println(re.MatchString("a123"))     // true
 fmt.Println(re.MatchString("a12a"))     // false
 ```
-
-### Comment
-
-```go
-re := regexp.MustCompile(`(?#comment here)1234`)
-fmt.Println(re.MatchString("1234"))      // true
-```

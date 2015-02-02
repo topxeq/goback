@@ -4,4 +4,5 @@ install:
  - go get github.com/stretchr/testify/assert
 
 script:
- - cd regexp; go test -v
+ - go test -v ./regexp
+ - go test -v ./regexp/syntax
