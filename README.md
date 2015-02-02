@@ -31,16 +31,15 @@ func main() {
 ### Possessive qualifiers
 
 ```go
-package main
+re := regexp.MustCompile(`^[0-9]++[0-9a]`)
+fmt.Println(re.MatchString("1234a"))     // true
+fmt.Println(re.MatchString("1234"))      // false
+```
 
-import (
-	"fmt"
-	"github.com/h2so5/goback/regexp"
-)
+### Atomic group
 
-func main() {
-	re := regexp.MustCompile(`^[0-9]++[0-9a]`)
-	fmt.Println(re.MatchString("1234a"))     // true
-	fmt.Println(re.MatchString("1234"))      // false
-}
+```go
+re := regexp.MustCompile(`^(?>[0-9]+)[0-9a]`)
+fmt.Println(re.MatchString("1234a"))     // true
+fmt.Println(re.MatchString("1234"))      // false
 ```

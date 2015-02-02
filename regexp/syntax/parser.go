@@ -94,6 +94,7 @@ func (p *parser) group(runes []rune, flags syntax.Flags) node {
 	if len(r) >= 2 && r[0] == '?' {
 		if r[1] == '>' {
 			g.Atomic = true
+			indexed = false
 			r = r[2:]
 		} else if r[1] == ':' {
 			indexed = false

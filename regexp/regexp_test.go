@@ -375,3 +375,26 @@ func TestEscape(t *testing.T) {
 			r.FindAllStringSubmatchIndex(str, -1))
 	}
 }
+
+func TestAtomic(t *testing.T) {
+	assert := assert.New(t)
+
+	{
+		str := "1234"
+		exp := "^[0-9]++[0-9a]"
+		r := mustCompile(exp)
+		assert.Nil(r.FindAllStringSubmatchIndex(str, -1))
+	}
+	{
+		str := "1234a"
+		exp := "^[0-9]++[0-9a]"
+		r := mustCompile(exp)
+		assert.Equal([][]int{[]int{0, 5}}, r.FindAllStringSubmatchIndex(str, -1))
+	}
+	{
+		str := `"正規表現"`
+		exp := `"(?:(?>.*)|(.*))"`
+		r := mustCompile(exp)
+		assert.Equal([][]int{[]int{0, 14, 1, 13}}, r.FindAllStringSubmatchIndex(str, -1))
+	}
+}

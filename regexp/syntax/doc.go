@@ -7,6 +7,9 @@ Syntax
 This package supports following syntax in addition to the golang built-in regexp.
 
 
+Grouping:
+  (?>re)         atomic group; non-capturing
+
 Repetitions:
   x*+            zero or more x, possessive
   x++            one or more x, possessive
