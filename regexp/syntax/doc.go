@@ -9,6 +9,7 @@ This package supports following syntax in addition to the golang built-in regexp
 
 Grouping:
   (?>re)         atomic group; non-capturing
+  (?#comment)    comment
 
 Repetitions:
   x*+            zero or more x, possessive

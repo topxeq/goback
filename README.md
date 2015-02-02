@@ -43,3 +43,10 @@ re := regexp.MustCompile(`^(?>[0-9]+)[0-9a]`)
 fmt.Println(re.MatchString("1234a"))     // true
 fmt.Println(re.MatchString("1234"))      // false
 ```
+
+### Comment
+
+```go
+re := regexp.MustCompile(`(?#comment here)1234`)
+fmt.Println(re.MatchString("1234"))      // true
+```

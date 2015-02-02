@@ -92,14 +92,17 @@ func (p *parser) group(runes []rune, flags syntax.Flags) node {
 
 	exp := append(append([]rune{'('}, runes...), ')')
 	if len(r) >= 2 && r[0] == '?' {
-		if r[1] == '>' {
+		switch {
+		case r[1] == '>':
 			g.Atomic = true
 			indexed = false
 			r = r[2:]
-		} else if r[1] == ':' {
+		case r[1] == ':':
 			indexed = false
 			r = r[2:]
-		} else if r[1] == 'P' {
+		case r[1] == '#':
+			return g
+		case r[1] == 'P':
 			if len(r) >= 3 && r[2] == '<' {
 				r = r[3:]
 				var name []rune
@@ -131,7 +134,7 @@ func (p *parser) group(runes []rune, flags syntax.Flags) node {
 			} else {
 				panic(newErrorRunes(syntax.ErrInvalidPerlOp, exp))
 			}
-		} else {
+		default:
 			f := 1
 			indexed = false
 			internal := false
