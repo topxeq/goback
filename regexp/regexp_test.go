@@ -409,3 +409,35 @@ func TestComment(t *testing.T) {
 		assert.Equal([][]int{[]int{0, 14, 1, 13}}, r.FindAllStringSubmatchIndex(str, -1))
 	}
 }
+
+func TestLookahead(t *testing.T) {
+	assert := assert.New(t)
+
+	{
+		str := `正規表現`
+		exp := `正規(?=表現)`
+		r := mustCompile(exp)
+		assert.Equal([][]int{[]int{0, 6}}, r.FindAllStringSubmatchIndex(str, -1))
+	}
+
+	{
+		str := `正規言語`
+		exp := `正規(?=表現)`
+		r := mustCompile(exp)
+		assert.Nil(r.FindAllStringSubmatchIndex(str, -1))
+	}
+
+	{
+		str := `正規言語`
+		exp := `正規(?!表現)`
+		r := mustCompile(exp)
+		assert.Equal([][]int{[]int{0, 6}}, r.FindAllStringSubmatchIndex(str, -1))
+	}
+
+	{
+		str := `正規表現`
+		exp := `正規(?!表現)`
+		r := mustCompile(exp)
+		assert.Nil(r.FindAllStringSubmatchIndex(str, -1))
+	}
+}

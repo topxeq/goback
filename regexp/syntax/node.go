@@ -569,3 +569,33 @@ func (f *backRefNodeFiber) Resume() (output, error) {
 	}
 	return output{}, errDeadFiber
 }
+
+type lookaheadNode struct {
+	N        node
+	Negative bool
+}
+
+func (n lookaheadNode) Fiber(i input) fiber {
+	return &lookaheadNodeFiber{I: i, node: n}
+}
+
+func (n lookaheadNode) IsExtended() bool {
+	return true
+}
+
+type lookaheadNodeFiber struct {
+	I    input
+	node lookaheadNode
+	cnt  int
+}
+
+func (f *lookaheadNodeFiber) Resume() (output, error) {
+	if f.cnt == 0 {
+		f.cnt++
+		_, err := f.node.N.Fiber(f.I).Resume()
+		if (err == nil) != f.node.Negative {
+			return output{b: f.I.b[0:0]}, nil
+		}
+	}
+	return output{}, errDeadFiber
+}

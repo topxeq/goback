@@ -9,6 +9,8 @@ This package supports following syntax in addition to the golang built-in regexp
 
 Grouping:
   (?>re)         atomic group; non-capturing
+  (?=re)         lookahead; non-capturing
+  (?!re)         negative lookahead; non-capturing
   (?#comment)    comment
 
 Repetitions:

@@ -80,6 +80,12 @@ func applyFlags(f syntax.Flags, m map[syntax.Flags]int) syntax.Flags {
 	return f
 }
 
+const (
+	wrapperNone = iota
+	wrapperLookahead
+	wrapperNegativeLookahead
+)
+
 func (p *parser) group(runes []rune, flags syntax.Flags) node {
 	g := groupNode{
 		N: []node{},
@@ -89,6 +95,7 @@ func (p *parser) group(runes []rune, flags syntax.Flags) node {
 	meta := false
 	r := runes
 	indexed := true
+	wrapper := wrapperNone
 
 	exp := append(append([]rune{'('}, runes...), ')')
 	if len(r) >= 2 && r[0] == '?' {
@@ -102,6 +109,14 @@ func (p *parser) group(runes []rune, flags syntax.Flags) node {
 			r = r[2:]
 		case r[1] == '#':
 			return g
+		case r[1] == '=':
+			indexed = false
+			wrapper = wrapperLookahead
+			r = r[2:]
+		case r[1] == '!':
+			indexed = false
+			wrapper = wrapperNegativeLookahead
+			r = r[2:]
 		case r[1] == 'P':
 			if len(r) >= 3 && r[2] == '<' {
 				r = r[3:]
@@ -408,6 +423,12 @@ func (p *parser) group(runes []rune, flags syntax.Flags) node {
 	g.N = p.concatLiterals(g.N)
 	g.N = p.concatAlternations(g.N)
 
+	switch wrapper {
+	case wrapperLookahead:
+		return lookaheadNode{N: g}
+	case wrapperNegativeLookahead:
+		return lookaheadNode{N: g, Negative: true}
+	}
 	return g
 }
 

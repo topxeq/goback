@@ -48,6 +48,14 @@ fmt.Println(re.MatchString("1234a"))     // true
 fmt.Println(re.MatchString("1234"))      // false
 ```
 
+### Lookahead
+
+```go
+re := regexp.MustCompile(`a(?=[0-9]{3})1`)
+fmt.Println(re.MatchString("a123"))     // true
+fmt.Println(re.MatchString("a12a"))     // false
+```
+
 ### Comment
 
 ```go
