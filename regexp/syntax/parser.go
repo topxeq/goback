@@ -201,15 +201,16 @@ func (p *parser) group(runes []rune, flags syntax.Flags) node {
 				g.N = append(g.N, n)
 			case '1' <= r[0] && r[0] <= '7':
 				size := 1
-				i := r[0] - '0'
+				oct := []int{int(r[0] - '0'), 0, 0}
 				if len(r) >= 2 && '0' <= r[1] && r[1] <= '7' {
-					i += (r[1] - '0') * 8
+					oct = append([]int{int(r[1] - '0')}, oct...)
 					size++
 				}
 				if len(r) >= 3 && '0' <= r[2] && r[2] <= '7' {
-					i += (r[1] - '0') * 8 * 8
+					oct = append([]int{int(r[2] - '0')}, oct...)
 					size++
 				}
+				i := oct[0] + oct[1]*8 + oct[2]*64
 				n, _ := p.fetchLiteral([]rune{rune(i)}, flags)
 				r = r[size:]
 				g.N = append(g.N, n)
