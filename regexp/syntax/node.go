@@ -25,7 +25,7 @@ func (i input) Substr(offset int, sub submatch) input {
 	return input{
 		b:     i.b[offset:],
 		o:     i.o,
-		runes: bytes.Runes(i.o[:i.begin + offset]),
+		runes: bytes.Runes(i.o[:i.begin+offset]),
 		begin: i.begin + offset,
 		sub:   sub,
 	}
@@ -33,7 +33,7 @@ func (i input) Substr(offset int, sub submatch) input {
 
 type output struct {
 	offset int
-	sub submatch
+	sub    submatch
 }
 
 type matchLocation struct {
@@ -186,8 +186,8 @@ mainloop:
 							f.fixed = true
 						}
 						return output{
-							offset:   len(b),
-							sub: o.sub.Merge(s),
+							offset: len(b),
+							sub:    o.sub.Merge(s),
 						}, nil
 					}
 					f.stack[i] = &o
@@ -264,7 +264,7 @@ loop:
 			}
 			return output{
 				offset: 0,
-				sub: f.I.sub,
+				sub:    f.I.sub,
 			}, nil
 		}
 
@@ -288,8 +288,8 @@ loop:
 			f.fixed = true
 		}
 		return output{
-			offset:   o.offset,
-			sub: o.sub,
+			offset: o.offset,
+			sub:    o.sub,
 		}, nil
 	}
 	return output{}, errDeadFiber
