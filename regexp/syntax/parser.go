@@ -958,7 +958,7 @@ func (p *parser) concatLiterals(nodes []node) []node {
 
 func (p *parser) concatAlternations(nodes []node) []node {
 	altidx := []int{0}
-	n := []node{}
+	res := []node{}
 	for i, n := range nodes {
 		if _, ok := n.(alterNode); ok {
 			altidx = append(altidx, i, i+1)
@@ -973,14 +973,24 @@ func (p *parser) concatAlternations(nodes []node) []node {
 		e := altidx[i*2+1]
 		g := nodes[b:e]
 		if len(g) == 0 {
-			n = append(n, nil)
+			res = append(res, nil)
 		} else if len(g) == 1 {
-			n = append(n, g[0])
+			res = append(res, g[0])
 		} else {
-			n = append(n, groupNode{N: g})
+			res = append(res, groupNode{N: g})
 		}
 	}
-	return []node{alterNode{N: n}}
+	uniq := make([]node,0,len(res))
+loop:
+	for _, n := range res {
+		for _, d := range uniq {
+			if reflect.DeepEqual(n, d) {
+				continue loop
+			}
+		}
+		uniq = append(uniq, n)
+	}
+	return []node{alterNode{N: uniq}}
 }
 
 func (p *parser) removeSequentialBoundaries(nodes []node) []node {
