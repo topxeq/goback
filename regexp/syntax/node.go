@@ -79,6 +79,7 @@ type fiber interface {
 type node interface {
 	Fiber(i input) fiber
 	IsExtended() bool
+	MinMax() (int, int)
 }
 
 // flagNode represents a flag expression: /(?i)/
@@ -93,6 +94,10 @@ func (n flagNode) Fiber(i input) fiber {
 
 func (n flagNode) IsExtended() bool {
 	return false
+}
+
+func (n flagNode) MinMax() (int, int) {
+	return 0, 0
 }
 
 // groupNode represents a group expression: /([exp])/
@@ -128,6 +133,23 @@ func (n groupNode) IsAnonymous() bool {
 	return n.Index == 0 && len(n.Name) == 0
 }
 
+func (n groupNode) MinMax() (int, int) {
+	gmin := 0
+	gmax := 0
+	for _, e := range n.N {
+		min, max := e.MinMax()
+		if gmin >= 0 {
+			gmin += min
+		}
+		if max < 0 {
+			gmax = -1
+		} else if gmax >= 0 {
+			gmax += max
+		}
+	}
+	return gmin, gmax
+}
+
 type groupNodeFiber struct {
 	I      input
 	node   groupNode
@@ -138,6 +160,12 @@ type groupNodeFiber struct {
 
 func (f *groupNodeFiber) Resume() (output, error) {
 	if f.fixed {
+		return output{}, errDeadFiber
+	}
+
+	min, _ := f.node.MinMax()
+	if len(f.I.b) < min {
+		f.fixed = true
 		return output{}, errDeadFiber
 	}
 
@@ -215,8 +243,14 @@ func (n repeatNode) Fiber(i input) fiber {
 	f := repeatNodeFiber{I: i, node: n}
 
 	max := f.node.Max
+	min, _ := f.node.MinMax()
+
 	if max < 0 {
-		max = len(f.I.b)
+		if min <= 0 {
+			max = len(f.I.b)
+		} else {
+			max = len(f.I.b) / min
+		}
 	}
 
 	if max < f.node.Min {
@@ -238,6 +272,18 @@ func (n repeatNode) Fiber(i input) fiber {
 
 func (n repeatNode) IsExtended() bool {
 	return n.Atomic || n.N.IsExtended()
+}
+
+func (n repeatNode) MinMax() (int, int) {
+	min, max := n.N.MinMax()
+	rmin := n.Min * min
+	rmax := 0
+	if max < 0 || n.Max < 0 {
+		rmax = -1
+	} else {
+		rmax = max * n.Max
+	}
+	return rmin, rmax
 }
 
 type repeatNodeFiber struct {
@@ -319,6 +365,27 @@ func (n alterNode) IsExtended() bool {
 	return false
 }
 
+func (n alterNode) MinMax() (int, int) {
+	amin := -1
+	amax := 0
+	for _, e := range n.N {
+		min := 0
+		max := 0
+		if e != nil {
+			min, max = e.MinMax()
+		}
+		if amin < 0 || amin > min {
+			amin = min
+		}
+		if max < 0 {
+			amax = -1
+		} else if amax >= 0 && amax < max {
+			amax = max
+		}
+	}
+	return amin, amax
+}
+
 type alterNodeFiber struct {
 	I      input
 	node   alterNode
@@ -341,10 +408,6 @@ func (f *alterNodeFiber) Resume() (output, error) {
 }
 
 // charNode represents a character expression: /[a-z]/
-type charNodeMatcher interface {
-	Match(rune, syntax.Flags) bool
-}
-
 type charNode struct {
 	Flags    syntax.Flags
 	Matcher  []charNodeMatcher
@@ -357,6 +420,10 @@ func (n charNode) Fiber(i input) fiber {
 
 func (n charNode) IsExtended() bool {
 	return false
+}
+
+func (n charNode) MinMax() (int, int) {
+	return 1, utf8.UTFMax
 }
 
 type charNodeFiber struct {
@@ -402,6 +469,10 @@ func (n literalNode) IsExtended() bool {
 	return false
 }
 
+func (n literalNode) MinMax() (int, int) {
+	return len(n.L), len(n.L)
+}
+
 type literalNodeFiber struct {
 	I    input
 	node literalNode
@@ -439,6 +510,10 @@ func (n beginNode) IsExtended() bool {
 	return false
 }
 
+func (n beginNode) MinMax() (int, int) {
+	return 0, 0
+}
+
 type beginNodeFiber struct {
 	I    input
 	node beginNode
@@ -472,6 +547,10 @@ func (n endNode) IsExtended() bool {
 	return false
 }
 
+func (n endNode) MinMax() (int, int) {
+	return 0, 0
+}
+
 type endNodeFiber struct {
 	I    input
 	node endNode
@@ -501,6 +580,10 @@ func (n wordBoundaryNode) Fiber(i input) fiber {
 
 func (n wordBoundaryNode) IsExtended() bool {
 	return false
+}
+
+func (n wordBoundaryNode) MinMax() (int, int) {
+	return 0, 0
 }
 
 type wordBoundaryFiber struct {
@@ -542,6 +625,10 @@ func (n backRefNode) Fiber(i input) fiber {
 
 func (n backRefNode) IsExtended() bool {
 	return true
+}
+
+func (n backRefNode) MinMax() (int, int) {
+	return 0, -1
 }
 
 type backRefNodeFiber struct {
@@ -589,6 +676,10 @@ func (n lookaheadNode) Fiber(i input) fiber {
 
 func (n lookaheadNode) IsExtended() bool {
 	return true
+}
+
+func (n lookaheadNode) MinMax() (int, int) {
+	return 0, -1
 }
 
 type lookaheadNodeFiber struct {

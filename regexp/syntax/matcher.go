@@ -5,6 +5,10 @@ import (
 	"unicode"
 )
 
+type charNodeMatcher interface {
+	Match(rune, syntax.Flags) bool
+}
+
 type reverseMatcher struct {
 	M charNodeMatcher
 }
