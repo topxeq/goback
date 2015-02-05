@@ -31,6 +31,12 @@ func AssertBuiltIn(t *testing.T, exp, str string) {
 		t.Errorf("%#q.FindSubmatchIndex(%#q) = %v, want %v", exp, str, rm, gm)
 	}
 
+	rs := r.Split(str, -1)
+	gs := g.Split(str, -1)
+	if !reflect.DeepEqual(rs, gs) {
+		t.Errorf("%#q.Split(%#q) = %v, want %v", exp, str, rs, gs)
+	}
+
 	r.Longest()
 	g.Longest()
 

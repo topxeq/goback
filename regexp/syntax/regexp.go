@@ -262,38 +262,39 @@ func (re *regexp) split(b []byte) ([][]byte, [][]byte, [][]int) {
 	return sub, sep, match
 }
 
-func reverseRange(idx [][]int, size int, n int) [][]int {
-	var ret [][]int
-	before := 0
-	for _, i := range idx {
-		r := []int{before, i[0]}
-		if r[0] != i[0] || r[1] != i[1] {
-			ret = append(ret, r)
-		}
-		before = i[1]
-	}
-	last := idx[len(idx)-1]
-	r := []int{last[1], size}
-	if r[0] != last[0] || r[1] != last[1] {
-		ret = append(ret, r)
-	}
-	if n > 0 && len(ret) > n {
-		ret = append(ret[:n-1], []int{ret[n-1][0], size})
-	}
-	return ret
-}
-
+// From http://golang.org/src/regexp/regexp.go
 func (re *regexp) Split(s string, n int) []string {
+
 	if n == 0 {
 		return nil
-	} else if n == 1 {
-		return []string{s}
 	}
-	var ret []string
-	for _, i := range reverseRange(re.FindAllStringIndex(s, n), len(s), n) {
-		ret = append(ret, s[i[0]:i[1]])
+
+	if len(re.expr) > 0 && len(s) == 0 {
+		return []string{""}
 	}
-	return ret
+
+	matches := re.FindAllStringIndex(s, n)
+	strings := make([]string, 0, len(matches))
+
+	beg := 0
+	end := 0
+	for _, match := range matches {
+		if n > 0 && len(strings) >= n-1 {
+			break
+		}
+
+		end = match[0]
+		if match[1] != 0 {
+			strings = append(strings, s[beg:end])
+		}
+		beg = match[1]
+	}
+
+	if end != len(s) {
+		strings = append(strings, s[beg:])
+	}
+
+	return strings
 }
 
 func (re *regexp) Expand(dst []byte, template []byte, src []byte, match []int) []byte {
