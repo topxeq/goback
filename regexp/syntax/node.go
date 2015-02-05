@@ -13,7 +13,6 @@ var (
 
 type input struct {
 	b, o  []byte
-	runes []rune
 	begin int
 	sub   submatch
 }
@@ -25,7 +24,6 @@ func (i input) Substr(offset int, sub submatch) input {
 	return input{
 		b:     i.b[offset:],
 		o:     i.o,
-		runes: bytes.Runes(i.o[:i.begin+offset]),
 		begin: i.begin + offset,
 		sub:   sub,
 	}
@@ -596,11 +594,8 @@ func (f *wordBoundaryFiber) Resume() (output, error) {
 	if f.cnt == 0 {
 		f.cnt++
 		match := false
-		if len(f.I.b) > 0 && len(f.I.runes) > 0 {
-			r, _ := utf8.DecodeRune(f.I.b)
-			if isASCIIWord(r) != isASCIIWord(f.I.runes[len(f.I.runes)-1]) {
-				match = true
-			}
+		if len(f.I.b) > 0 && f.I.begin > 0 && isASCIIWord(rune(f.I.b[0])) != isASCIIWord(rune(f.I.o[f.I.begin-1])) {
+			match = true
 		}
 		if f.node.Reversed {
 			match = !match
@@ -694,6 +689,65 @@ func (f *lookaheadNodeFiber) Resume() (output, error) {
 		_, err := f.node.N.Fiber(f.I).Resume()
 		if (err == nil) != f.node.Negative {
 			return output{offset: 0}, nil
+		}
+	}
+	return output{}, errDeadFiber
+}
+
+type lookbehindNode struct {
+	N        node
+	Negative bool
+}
+
+func (n lookbehindNode) Fiber(i input) fiber {
+	return &lookbehindNodeFiber{I: i, node: n}
+}
+
+func (n lookbehindNode) IsExtended() bool {
+	return true
+}
+
+func (n lookbehindNode) MinMax() (int, int) {
+	return 0, -1
+}
+
+type lookbehindNodeFiber struct {
+	I    input
+	node lookbehindNode
+	cnt  int
+}
+
+func (f *lookbehindNodeFiber) Resume() (output, error) {
+	if f.cnt == 0 {
+		f.cnt++
+		min, max := f.node.N.MinMax()
+		if max < 0 {
+			panic("Lookbehind only supports a finite length matching")
+		}
+		if max > f.I.begin {
+			max = f.I.begin
+		}
+		if min <= max {
+			match := false
+			for i := min; i <= max; i++ {
+				in := input{
+					b:     f.I.o[f.I.begin - i:],
+					o:     f.I.o,
+					begin: f.I.begin - i,
+					sub:   f.I.sub,
+				}
+				_, err := f.node.N.Fiber(in).Resume()
+				if (err == nil) {
+					match = true
+					break
+				}
+			}
+			if f.node.Negative {
+				match = !match
+			}
+			if match {
+				return output{offset: 0}, nil
+			}
 		}
 	}
 	return output{}, errDeadFiber

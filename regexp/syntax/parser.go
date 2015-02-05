@@ -85,6 +85,8 @@ const (
 	wrapperNone = iota
 	wrapperLookahead
 	wrapperNegativeLookahead
+	wrapperLookbehind
+	wrapperNegativeLookbehind
 )
 
 func (p *parser) group(runes []rune, flags syntax.Flags) node {
@@ -114,6 +116,14 @@ func (p *parser) group(runes []rune, flags syntax.Flags) node {
 			indexed = false
 			wrapper = wrapperLookahead
 			r = r[2:]
+		case len(r) >= 3 && r[1] == '<' && r[2] == '=':
+			indexed = false
+			wrapper = wrapperLookbehind
+			r = r[3:]
+		case len(r) >= 3 && r[1] == '<' && r[2] == '!':
+			indexed = false
+			wrapper = wrapperNegativeLookbehind
+			r = r[3:]
 		case r[1] == '!':
 			indexed = false
 			wrapper = wrapperNegativeLookahead
@@ -426,11 +436,23 @@ func (p *parser) group(runes []rune, flags syntax.Flags) node {
 	g.N = p.concatAlternations(g.N)
 	g.N = p.removeSequentialBoundaries(g.N)
 
+	_, max := g.MinMax()
+
 	switch wrapper {
 	case wrapperLookahead:
 		return lookaheadNode{N: g}
 	case wrapperNegativeLookahead:
 		return lookaheadNode{N: g, Negative: true}
+	case wrapperLookbehind:
+		if max < 0 {
+			panic(newErrorRunes(syntax.ErrInvalidPerlOp, exp))
+		}
+		return lookbehindNode{N: g}
+	case wrapperNegativeLookbehind:
+		if max < 0 {
+			panic(newErrorRunes(syntax.ErrInvalidPerlOp, exp))
+		}
+		return lookbehindNode{N: g, Negative: true}
 	}
 	return g
 }

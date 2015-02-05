@@ -66,3 +66,12 @@ func Example_Lookahead() {
 	// true
 	// false
 }
+
+func Example_Lookbehind() {
+	re := regexp.MustCompile(`(?<=a[0-9]{3,5})a`)
+	fmt.Println(re.MatchString("a12a"))
+	fmt.Println(re.MatchString("a12345a"))
+	// Output:
+	// false
+	// true
+}

@@ -62,3 +62,11 @@ re := regexp.MustCompile(`a(?=[0-9]{3})1`)
 fmt.Println(re.MatchString("a123"))     // true
 fmt.Println(re.MatchString("a12a"))     // false
 ```
+
+### Lookbehind
+
+```go
+re := regexp.MustCompile(`(?<=a[0-9]{3,5})a`)
+fmt.Println(re.MatchString("a12a"))     // false
+fmt.Println(re.MatchString("a12345a"))  // true
+```

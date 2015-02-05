@@ -11,6 +11,8 @@ Grouping:
   (?>re)         atomic group; non-capturing
   (?=re)         lookahead; non-capturing
   (?!re)         negative lookahead; non-capturing
+  (?<=re)        lookbehind; non-capturing
+  (?<!re)        negative lookbehind; non-capturing
   (?#comment)    comment
 
 Repetitions:
@@ -26,6 +28,18 @@ Back reference:
   \kName         refer to named capturing
   \k{N}          refer to numbered capturing
   \k{Name}       refer to named capturing
+
+
+Lookbehind limitation
+
+Lookbehind and negative lookbehind only support expressions
+that have deterministic matching length.
+
+
+  (?<=abc)        // OK
+  (?<=.{2,5})     // OK
+  (?<=foo|barbaz) // OK
+  (?<=x+)         // NG
 
 */
 package syntax
