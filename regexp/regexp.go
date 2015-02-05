@@ -230,7 +230,7 @@ func Compile(expr string) (Regexp, error) {
 	if ext {
 		return r, nil
 	}
-	return regexp.Compile(expr)
+	return regexp.Compile(ignoreComments(expr))
 }
 
 func compile(expr string) (Regexp, error) {
@@ -287,4 +287,10 @@ func MatchString(pattern string, s string) (matched bool, err error) {
 // the literal text.  For example, QuoteMeta(`[foo]`) returns `\[foo\]`.
 func QuoteMeta(s string) string {
 	return regexp.QuoteMeta(s)
+}
+
+var commentRegexp = regexp.MustCompile(`(^|[^\\]|\\\\)(\(\?#[^)]*\))`)
+
+func ignoreComments(expr string) string {
+	return commentRegexp.ReplaceAllString(expr, "$1")
 }

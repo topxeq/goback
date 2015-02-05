@@ -11,6 +11,7 @@ Grouping:
   (?>re)         atomic group; non-capturing
   (?=re)         lookahead; non-capturing
   (?!re)         negative lookahead; non-capturing
+  (?#comment)    comment
 
 Repetitions:
   x*+            zero or more x, possessive

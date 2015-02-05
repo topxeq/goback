@@ -108,6 +108,8 @@ func (p *parser) group(runes []rune, flags syntax.Flags) node {
 		case r[1] == ':':
 			indexed = false
 			r = r[2:]
+		case r[1] == '#':
+			return g
 		case r[1] == '=':
 			indexed = false
 			wrapper = wrapperLookahead

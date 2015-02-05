@@ -51,6 +51,13 @@ func Example_AtomicGroup() {
 	// false
 }
 
+func Example_Comment() {
+	re := regexp.MustCompile(`(?#comment here)1234`)
+	fmt.Println(re.MatchString("1234"))
+	// Output:
+	// true
+}
+
 func Example_Lookahead() {
 	re := regexp.MustCompile(`a(?=[0-9]{3})1`)
 	fmt.Println(re.MatchString("a123"))
