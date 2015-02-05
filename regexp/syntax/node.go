@@ -13,6 +13,7 @@ var (
 
 type input struct {
 	b, o  []byte
+	runes []rune
 	begin int
 	sub   submatch
 }
@@ -24,6 +25,7 @@ func (i input) Substr(offset int, sub submatch) input {
 	return input{
 		b:     i.b[offset:],
 		o:     i.o,
+		runes: bytes.Runes(i.o[:i.begin + offset]),
 		begin: i.begin + offset,
 		sub:   sub,
 	}
@@ -511,8 +513,11 @@ func (f *wordBoundaryFiber) Resume() (output, error) {
 	if f.cnt == 0 {
 		f.cnt++
 		match := false
-		if len(f.I.b) > 0 && f.I.begin > 0 && isASCIIWord(rune(f.I.b[0])) != isASCIIWord(rune(f.I.o[f.I.begin-1])) {
-			match = true
+		if len(f.I.b) > 0 && len(f.I.runes) > 0 {
+			r, _ := utf8.DecodeRune(f.I.b)
+			if isASCIIWord(r) != isASCIIWord(f.I.runes[len(f.I.runes)-1]) {
+				match = true
+			}
 		}
 		if f.node.Reversed {
 			match = !match

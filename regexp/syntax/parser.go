@@ -964,10 +964,10 @@ func (p *parser) removeSequentialBoundaries(nodes []node) []node {
 	for _, n := range nodes {
 		if len(r) > 0 {
 			switch n.(type) {
-				case beginNode, endNode, wordBoundaryNode:
-					if reflect.DeepEqual(n, r[len(r)-1]) {
-						continue
-					}
+			case beginNode, endNode, wordBoundaryNode:
+				if reflect.DeepEqual(n, r[len(r)-1]) {
+					continue
+				}
 			}
 		}
 		r = append(r, n)
