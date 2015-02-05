@@ -73,7 +73,8 @@ func (re *regexp) findSubmatchIndex(b []byte, f int) []int {
 					}
 				}
 			}
-			loc := []int{offset, offset + o.offset}
+			loc := make([]int, 0, re.NumSubexp()*2)
+			loc = append(loc, []int{offset, offset + o.offset}...)
 			for i := 1; i <= re.NumSubexp(); i++ {
 				if sub, ok := o.sub.i[i]; ok {
 					loc = append(loc, sub.begin, sub.begin+len(sub.b))
