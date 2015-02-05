@@ -2,6 +2,8 @@ package regexp
 
 import (
 	"bufio"
+	"compress/gzip"
+	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -63,7 +65,7 @@ func AssertEqual(t *testing.T, exp, str string, res []int) {
 }
 
 func TestBuiltIn(t *testing.T) {
-	file, err := os.Open("./builtin.txt")
+	file, err := os.Open("./_testdata/builtin.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -101,7 +103,7 @@ func TestBuiltIn(t *testing.T) {
 }
 
 func TestInvalid(t *testing.T) {
-	file, err := os.Open("./invalid.txt")
+	file, err := os.Open("./_testdata/invalid.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -123,7 +125,7 @@ func TestInvalid(t *testing.T) {
 }
 
 func TestExtended(t *testing.T) {
-	file, err := os.Open("./extended.txt")
+	file, err := os.Open("./_testdata/extended.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -164,5 +166,31 @@ func TestExtended(t *testing.T) {
 			}
 			str = s
 		}
+	}
+}
+
+func BenchmarkLiteral(b *testing.B) {
+
+	file, err := os.Open("./_testdata/アーサー王物語.txt.gz")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	gz, err := gzip.NewReader(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	data, err := ioutil.ReadAll(gz)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	r := mustCompile(`Arthur`)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		r.FindAllSubmatchIndex(data, -1)
 	}
 }
