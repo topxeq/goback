@@ -32,7 +32,7 @@ func (i input) Substr(offset int, sub submatch) input {
 }
 
 type output struct {
-	b   []byte
+	offset int
 	sub submatch
 }
 
@@ -144,7 +144,7 @@ func (f *groupNodeFiber) Resume() (output, error) {
 	if len(f.node.N) == 0 {
 		f.fixed = true
 		return output{
-			b: f.I.b[:0],
+			offset: 0,
 		}, nil
 	}
 
@@ -172,7 +172,7 @@ mainloop:
 					break stloop
 				} else {
 					if i >= len(f.node.N)-1 {
-						b := f.I.b[:offset+len(o.b)]
+						b := f.I.b[:offset+o.offset]
 
 						s = s.Merge(submatch{})
 						if f.node.Index > 0 {
@@ -186,14 +186,14 @@ mainloop:
 							f.fixed = true
 						}
 						return output{
-							b:   b,
+							offset:   len(b),
 							sub: o.sub.Merge(s),
 						}, nil
 					}
 					f.stack[i] = &o
 				}
 			}
-			offset += len(f.stack[i].b)
+			offset += f.stack[i].offset
 			s = s.Merge(f.stack[i].sub)
 		}
 	}
@@ -263,7 +263,7 @@ loop:
 				f.fixed = true
 			}
 			return output{
-				b:   f.I.b[:0],
+				offset: 0,
 				sub: f.I.sub,
 			}, nil
 		}
@@ -288,7 +288,7 @@ loop:
 			f.fixed = true
 		}
 		return output{
-			b:   o.b,
+			offset:   o.offset,
 			sub: o.sub,
 		}, nil
 	}
@@ -330,9 +330,9 @@ func (f *alterNodeFiber) Resume() (output, error) {
 	for f.cnt < len(f.node.N) {
 		if f.fibers[f.cnt] == nil {
 			f.cnt++
-			return output{b: f.I.b[0:0]}, nil
+			return output{offset: 0}, nil
 		} else if o, err := f.fibers[f.cnt].Resume(); err == nil {
-			return output{b: o.b, sub: o.sub}, nil
+			return output{offset: o.offset, sub: o.sub}, nil
 		} else {
 			f.cnt++
 		}
@@ -381,7 +381,7 @@ func (f *charNodeFiber) Resume() (output, error) {
 				m = !m
 			}
 			if m {
-				return output{b: f.I.b[:size]}, nil
+				return output{offset: size}, nil
 			}
 		}
 	}
@@ -417,9 +417,9 @@ func (f *literalNodeFiber) Resume() (output, error) {
 			l = len(f.I.b)
 		}
 		if f.node.Flags&syntax.FoldCase != 0 && bytes.EqualFold(f.node.L, f.I.b[:l]) {
-			return output{b: f.I.b[:l]}, nil
+			return output{offset: l}, nil
 		} else if bytes.Equal(f.node.L, f.I.b[:l]) {
-			return output{b: f.I.b[:l]}, nil
+			return output{offset: l}, nil
 		}
 	}
 	return output{}, errDeadFiber
@@ -449,10 +449,10 @@ func (f *beginNodeFiber) Resume() (output, error) {
 	if f.cnt == 0 {
 		f.cnt++
 		if f.I.begin == 0 {
-			return output{b: f.I.b[0:0]}, nil
+			return output{offset: 0}, nil
 		}
 		if f.node.Line && f.node.Flags&syntax.OneLine == 0 && f.I.o[f.I.begin-1] == '\n' {
-			return output{b: f.I.b[0:0]}, nil
+			return output{offset: 0}, nil
 		}
 	}
 	return output{}, errDeadFiber
@@ -482,10 +482,10 @@ func (f *endNodeFiber) Resume() (output, error) {
 	if f.cnt == 0 {
 		f.cnt++
 		if len(f.I.b) == 0 {
-			return output{b: f.I.b[0:0]}, nil
+			return output{offset: 0}, nil
 		}
 		if f.node.Line && f.node.Flags&syntax.OneLine == 0 && len(f.I.b) > 0 && f.I.b[0] == '\n' {
-			return output{b: f.I.b[0:0]}, nil
+			return output{offset: 0}, nil
 		}
 	}
 	return output{}, errDeadFiber
@@ -523,7 +523,7 @@ func (f *wordBoundaryFiber) Resume() (output, error) {
 			match = !match
 		}
 		if match {
-			return output{b: f.I.b[0:0]}, nil
+			return output{offset: 0}, nil
 		}
 	}
 	return output{}, errDeadFiber
@@ -570,9 +570,9 @@ func (f *backRefNodeFiber) Resume() (output, error) {
 			l = len(f.I.b)
 		}
 		if f.node.Flags&syntax.FoldCase != 0 && bytes.EqualFold(b, f.I.b[:l]) {
-			return output{b: f.I.b[:l]}, nil
+			return output{offset: l}, nil
 		} else if bytes.Equal(b, f.I.b[:l]) {
-			return output{b: f.I.b[:l]}, nil
+			return output{offset: l}, nil
 		}
 	}
 	return output{}, errDeadFiber
@@ -602,7 +602,7 @@ func (f *lookaheadNodeFiber) Resume() (output, error) {
 		f.cnt++
 		_, err := f.node.N.Fiber(f.I).Resume()
 		if (err == nil) != f.node.Negative {
-			return output{b: f.I.b[0:0]}, nil
+			return output{offset: 0}, nil
 		}
 	}
 	return output{}, errDeadFiber

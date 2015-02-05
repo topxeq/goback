@@ -68,12 +68,12 @@ func (re *regexp) findSubmatchIndex(b []byte, f int) []int {
 					a, err := f.Resume()
 					if err != nil {
 						break
-					} else if len(a.b) > len(o.b) {
+					} else if a.offset > o.offset {
 						o = a
 					}
 				}
 			}
-			loc := []int{offset, offset + len(o.b)}
+			loc := []int{offset, offset + o.offset}
 			for i := 1; i <= re.NumSubexp(); i++ {
 				if sub, ok := o.sub.i[i]; ok {
 					loc = append(loc, sub.begin, sub.begin+len(sub.b))
