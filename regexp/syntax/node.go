@@ -803,7 +803,6 @@ func (f *funcNodeFiber) Resume() (output, error) {
 				}
 				return output{}, errDeadFiber
 			}
-			case
 		}
 	}
 	return output{}, errDeadFiber
