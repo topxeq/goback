@@ -265,6 +265,16 @@ func (n repeatNode) Fiber(i input) fiber {
 		f.nodes[i] = n.N
 	}
 
+	for i := min; i <= max; i++ {
+		n := groupNode{N: f.nodes[:i]}
+		g := n.Fiber(f.I.Substr(0, f.I.sub))
+		_, err := g.Resume()
+		if err != nil {
+			max = i - 1
+			break
+		}
+	}
+
 	if max < f.node.Min {
 		f.s = 0
 		f.e = 0
