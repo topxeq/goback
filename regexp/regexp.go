@@ -7,7 +7,9 @@ package regexp
 // If you don't use extended syntax, the golang built-in regex engine will be used transparently.
 
 import (
+	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/h2so5/goback/regexp/syntax"
 )
@@ -245,12 +247,38 @@ func Compile(expr string) (Regexp, error) {
 	}, err
 }
 
+// CompileFreeSpacing parses a regular expression like Compile,
+// but whitespace characters are ignored and # is parsed as the beggining of a line comment.
+func CompileFreeSpacing(expr string) (Regexp, error) {
+	r, ext, err := syntax.Compile(ignoreCommentsAndSpaces(expr))
+	if err != nil {
+		return nil, err
+	}
+	if ext {
+		return r, nil
+	}
+	re, err := regexp.Compile(ignoreComments(ignoreCommentsAndSpaces(expr)))
+	return &reg{
+		Regexp: re,
+	}, err
+}
+
 func compile(expr string) (Regexp, error) {
 	r, _, err := syntax.Compile(expr)
 	if err != nil {
 		return nil, err
 	}
 	return r, nil
+}
+
+// MustCompileFreeSpacing parses a regular expression like MustCompile,
+// but whitespace characters are ignored and # is parsed as the beggining of a line comment.
+func MustCompileFreeSpacing(str string) Regexp {
+	r, err := CompileFreeSpacing(str)
+	if err != nil {
+		panic(err)
+	}
+	return r
 }
 
 // MustCompile is like Compile but panics if the expression cannot be parsed.
@@ -305,4 +333,45 @@ var commentRegexp = regexp.MustCompile(`(^|[^\\]|\\\\)(\(\?#[^)]*\))`)
 
 func ignoreComments(expr string) string {
 	return commentRegexp.ReplaceAllString(expr, "$1")
+}
+
+var lineCommentRegexp = regexp.MustCompile(`(?m)(?:\\#)|(\#)|(?:#.*$)`)
+var spaceRegexp = regexp.MustCompile(`( )|(?:)`)
+
+func ignoreCommentsAndSpaces(expr string) string {
+	var res string
+loop:
+	for _, line := range strings.Split(expr, "\n") {
+		meta := false
+		for _, c := range line {
+			if meta {
+				switch c {
+				case '\\':
+					res += "\\"
+				case '#':
+					res += "#"
+				case ' ':
+					res += " "
+				default:
+					res += fmt.Sprintf("\\%c", c)
+				}
+				meta = false
+			} else {
+				switch c {
+				case '\\':
+					meta = true
+				case ' ':
+				case '\v':
+				case '\t':
+				case '[':
+					res += "["
+				case '#':
+					continue loop
+				default:
+					res += fmt.Sprintf("%c", c)
+				}
+			}
+		}
+	}
+	return res
 }

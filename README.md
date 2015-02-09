@@ -71,6 +71,20 @@ fmt.Println(re.MatchString("a12a"))     // false
 fmt.Println(re.MatchString("a12345a"))  // true
 ```
 
+### Free-Spacing mode
+
+```go
+re := regexp.MustCompileFreeSpacing(`
+
+	[0-9]+    # one or more digits
+	[a-zA-Z]* # zero or more alphabets
+	\#        # literal '#'
+
+`)
+fmt.Println(re.MatchString("1234#"))     // true
+fmt.Println(re.MatchString("12345abc"))  // false
+```
+
 ### Function
 
 ```go

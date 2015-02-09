@@ -79,6 +79,21 @@ func Example_Lookbehind() {
 	// true
 }
 
+func Example_FreeSpacing() {
+	re := regexp.MustCompileFreeSpacing(`
+
+		[0-9]+    # one or more digits
+		[a-zA-Z]* # zero or more alphabets
+		\#        # literal '#'
+
+	`)
+	fmt.Println(re.MatchString("1234#"))
+	fmt.Println(re.MatchString("12345abc"))
+	// Output:
+	// true
+	// false
+}
+
 func Example_Function() {
 	re := regexp.MustCompile(`(\d+)\+(\d+)=(?{add})`)
 	re.Funcs(syntax.FuncMap{
