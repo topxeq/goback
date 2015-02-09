@@ -187,7 +187,7 @@ func BenchmarkLiteral(b *testing.B) {
 		log.Fatal(err)
 	}
 
-	r := mustCompile(`[A-Za-z]{6}`)
+	r := mustCompile(`[A-Za-z]+`)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {

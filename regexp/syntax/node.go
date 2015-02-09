@@ -47,8 +47,8 @@ type submatch struct {
 }
 
 func (s submatch) Merge(m submatch) submatch {
-	i := make(map[int]matchLocation, len(s.i) + len(m.i))
-	n := make(map[string]matchLocation, len(s.n) + len(m.n))
+	i := make(map[int]matchLocation, len(s.i)+len(m.i))
+	n := make(map[string]matchLocation, len(s.n)+len(m.n))
 	for k, v := range s.i {
 		i[k] = v
 	}
@@ -104,19 +104,28 @@ func (n flagNode) MinMax() (int, int) {
 
 // groupNode represents a group expression: /([exp])/
 type groupNode struct {
-	N      []node
-	Atomic bool
-	Index  int
-	Name   string
-	mm     *minmax
+	N          []node
+	Atomic     bool
+	Index      int
+	Name       string
+	Repetition int
+	mm         *minmax
+}
+
+func (n groupNode) size() int {
+	size := len(n.N)
+	if size == 1 && n.Repetition > 0 {
+		size = n.Repetition
+	}
+	return size
 }
 
 func (n groupNode) Fiber(i input) fiber {
 	return &groupNodeFiber{
 		I:      i,
 		node:   n,
-		stack:  make([]*output, len(n.N)),
-		fstack: make([]fiber, len(n.N)),
+		stack:  make([]*output, n.size()),
+		fstack: make([]fiber, n.size()),
 	}
 }
 
@@ -142,7 +151,13 @@ func (n groupNode) MinMax() (int, int) {
 	}
 	gmin := 0
 	gmax := 0
-	for _, e := range n.N {
+
+	s := n.size()
+	for i := 0; i < s; i++ {
+		e := n.N[0]
+		if n.Repetition == 0 {
+			e = n.N[i]
+		}
 		min, max := e.MinMax()
 		if gmin >= 0 {
 			gmin += min
@@ -188,8 +203,13 @@ mainloop:
 		offset := 0
 		var s submatch
 		s = s.Merge(f.I.sub)
+		size := f.node.size()
 	stloop:
-		for i, n := range f.node.N {
+		for i := 0; i < size; i++ {
+			n := f.node.N[0]
+			if f.node.Repetition == 0 {
+				n = f.node.N[i]
+			}
 			if f.fstack[i] == nil {
 				f.fstack[i] = n.Fiber(f.I.Substr(offset, s))
 			}
@@ -206,7 +226,7 @@ mainloop:
 					}
 					break stloop
 				} else {
-					if i >= len(f.node.N)-1 {
+					if i >= size-1 {
 						b := f.I.b[:offset+o.offset]
 
 						s = s.Merge(submatch{})
@@ -260,15 +280,13 @@ func (n repeatNode) Fiber(i input) fiber {
 		}
 	}
 
-	f.nodes = make([]node, max)
-	for i := range f.nodes {
-		f.nodes[i] = n.N
-	}
-
 	for i := min; i <= max; i++ {
-		n := groupNode{N: f.nodes[:i]}
-		g := n.Fiber(f.I.Substr(0, f.I.sub))
-		_, err := g.Resume()
+		g := groupNode{N: []node{n.N}, Repetition: i}
+		if i == 0 {
+			g.N = []node(nil)
+		}
+		gf := g.Fiber(f.I.Substr(0, f.I.sub))
+		_, err := gf.Resume()
 		if err != nil {
 			max = i - 1
 			break
@@ -311,7 +329,6 @@ func (n repeatNode) MinMax() (int, int) {
 type repeatNodeFiber struct {
 	I         input
 	node      repeatNode
-	nodes     []node
 	s, e, suc int
 	cnt       int
 	group     fiber
@@ -338,7 +355,10 @@ loop:
 		}
 
 		if f.group == nil {
-			n := groupNode{N: f.nodes[:f.cnt]}
+			n := groupNode{N: []node{f.node.N}, Repetition: f.cnt}
+			if f.cnt == 0 {
+				n.N = []node(nil)
+			}
 			f.group = n.Fiber(f.I.Substr(0, f.I.sub))
 		}
 
