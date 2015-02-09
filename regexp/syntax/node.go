@@ -47,8 +47,8 @@ type submatch struct {
 }
 
 func (s submatch) Merge(m submatch) submatch {
-	i := map[int]matchLocation{}
-	n := map[string]matchLocation{}
+	i := make(map[int]matchLocation, len(s.i) + len(m.i))
+	n := make(map[string]matchLocation, len(s.n) + len(m.n))
 	for k, v := range s.i {
 		i[k] = v
 	}
