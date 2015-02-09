@@ -187,7 +187,59 @@ func BenchmarkLiteral(b *testing.B) {
 		log.Fatal(err)
 	}
 
-	r := mustCompile(`[A-Za-z]+`)
+	r := mustCompile(`(?i)arthur|アーサー`)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		r.FindAllSubmatchIndex(data, -1)
+	}
+}
+
+func BenchmarkHiragana(b *testing.B) {
+
+	file, err := os.Open("./_testdata/アーサー王物語.txt.gz")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	gz, err := gzip.NewReader(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	data, err := ioutil.ReadAll(gz)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	r := mustCompile(`[\\p{Hiragana}]+`)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		r.FindAllSubmatchIndex(data, -1)
+	}
+}
+
+func BenchmarkURL(b *testing.B) {
+
+	file, err := os.Open("./_testdata/アーサー王物語.txt.gz")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	gz, err := gzip.NewReader(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	data, err := ioutil.ReadAll(gz)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	r := mustCompile(`([a-zA-Z][a-zA-Z0-9]*)://([^ /]+)(/[^ ]*)?`)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
