@@ -82,6 +82,8 @@ type node interface {
 	MinMax() (int, int)
 }
 
+type minmax [2]int
+
 // flagNode represents a flag expression: /(?i)/
 type flagNode struct {
 	Flags map[syntax.Flags]int
@@ -106,6 +108,7 @@ type groupNode struct {
 	Atomic bool
 	Index  int
 	Name   string
+	mm     *minmax
 }
 
 func (n groupNode) Fiber(i input) fiber {
@@ -134,6 +137,9 @@ func (n groupNode) IsAnonymous() bool {
 }
 
 func (n groupNode) MinMax() (int, int) {
+	if n.mm != nil {
+		return n.mm[0], n.mm[1]
+	}
 	gmin := 0
 	gmax := 0
 	for _, e := range n.N {
@@ -147,6 +153,7 @@ func (n groupNode) MinMax() (int, int) {
 			gmax += max
 		}
 	}
+	n.mm = &minmax{gmin, gmax}
 	return gmin, gmax
 }
 
