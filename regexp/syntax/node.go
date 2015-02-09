@@ -15,6 +15,7 @@ type input struct {
 	b, o  []byte
 	begin int
 	sub   submatch
+	funcs []FuncMap
 }
 
 func (i input) Substr(offset int, sub submatch) input {
@@ -26,6 +27,7 @@ func (i input) Substr(offset int, sub submatch) input {
 		o:     i.o,
 		begin: i.begin + offset,
 		sub:   sub,
+		funcs: i.funcs,
 	}
 }
 
@@ -731,13 +733,13 @@ func (f *lookbehindNodeFiber) Resume() (output, error) {
 			match := false
 			for i := min; i <= max; i++ {
 				in := input{
-					b:     f.I.o[f.I.begin - i:],
+					b:     f.I.o[f.I.begin-i:],
 					o:     f.I.o,
 					begin: f.I.begin - i,
 					sub:   f.I.sub,
 				}
 				_, err := f.node.N.Fiber(in).Resume()
-				if (err == nil) {
+				if err == nil {
 					match = true
 					break
 				}
@@ -748,6 +750,60 @@ func (f *lookbehindNodeFiber) Resume() (output, error) {
 			if match {
 				return output{offset: 0}, nil
 			}
+		}
+	}
+	return output{}, errDeadFiber
+}
+
+type funcNode struct {
+	Name string
+}
+
+func (n funcNode) Fiber(i input) fiber {
+	return &funcNodeFiber{I: i, node: n}
+}
+
+func (n funcNode) IsExtended() bool {
+	return true
+}
+
+func (n funcNode) MinMax() (int, int) {
+	return 0, -1
+}
+
+type funcNodeFiber struct {
+	I    input
+	node funcNode
+}
+
+func (f *funcNodeFiber) Resume() (output, error) {
+	matches := make(map[interface{}][]int)
+	for k, v := range f.I.sub.i {
+		matches[k] = []int{v.begin, v.begin + len(v.b)}
+	}
+	for k, v := range f.I.sub.n {
+		matches[k] = []int{v.begin, v.begin + len(v.b)}
+	}
+	for _, m := range f.I.funcs {
+		if fun, ok := m[f.node.Name]; ok {
+			res := fun(Context{
+				Data:    f.I.o,
+				Cursor:  f.I.begin,
+				Matches: matches,
+			})
+			if res == nil {
+				return output{offset: 0}, nil
+			}
+			switch v := res.(type) {
+			case nil:
+				return output{offset: 0}, nil
+			case int:
+				if v >= 0 {
+					return output{offset: v}, nil
+				}
+				return output{}, errDeadFiber
+			}
+			case
 		}
 	}
 	return output{}, errDeadFiber

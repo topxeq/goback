@@ -1,9 +1,12 @@
 package regexp_test
 
 import (
+	"bytes"
 	"fmt"
+	"strconv"
 
 	"github.com/h2so5/goback/regexp"
+	"github.com/h2so5/goback/regexp/syntax"
 )
 
 func Example() {
@@ -74,4 +77,30 @@ func Example_Lookbehind() {
 	// Output:
 	// false
 	// true
+}
+
+func Example_Function() {
+	re := regexp.MustCompile(`(\d+)\+(\d+)=(?{add})`)
+	re.Funcs(syntax.FuncMap{
+		"add": func(ctx syntax.Context) interface{} {
+			lhs, err := strconv.Atoi(string(ctx.Data[ctx.Matches[1][0]:ctx.Matches[1][1]]))
+			if err != nil {
+				return -1
+			}
+			rhs, err := strconv.Atoi(string(ctx.Data[ctx.Matches[2][0]:ctx.Matches[2][1]]))
+			if err != nil {
+				return -1
+			}
+			answer := strconv.Itoa(lhs + rhs)
+			if bytes.HasPrefix(ctx.Data[ctx.Cursor:], []byte(answer)) {
+				return len(answer)
+			}
+			return -1
+		},
+	})
+	fmt.Println(re.MatchString("12+10=22"))
+	fmt.Println(re.MatchString("1+1=5"))
+	// Output:
+	// true
+	// false
 }

@@ -14,6 +14,7 @@ type regexp struct {
 	subexpNames []string
 	subexpMap   map[string]int
 	longest     bool
+	funcs       []FuncMap
 }
 
 func (re *regexp) NumSubexp() int {
@@ -60,7 +61,11 @@ func (re *regexp) FindSubmatchIndex(b []byte) []int {
 func (re *regexp) findSubmatchIndex(b []byte, f int) []int {
 	offset := f
 	for {
-		f := re.root.Fiber(input{b: b[offset:], o: b, begin: offset})
+		f := re.root.Fiber(input{
+			b: b[offset:],
+			o: b, begin: offset,
+			funcs: re.funcs,
+		})
 		o, err := f.Resume()
 		if err == nil {
 			if re.longest {
@@ -383,6 +388,20 @@ func (re *regexp) Longest() {
 
 func (re *regexp) String() string {
 	return re.expr
+}
+
+// Context represents a matching context used in a inline function
+type Context struct {
+	Data    []byte
+	Cursor  int
+	Matches map[interface{}][]int
+}
+
+// FuncMap is the type of the map defining the mapping from names to functions.
+type FuncMap map[string]func(ctx Context) interface{}
+
+func (re *regexp) Funcs(funcMap FuncMap) {
+	re.funcs = append(re.funcs, funcMap)
 }
 
 // Compile parses a regular expression and returns, if successful,

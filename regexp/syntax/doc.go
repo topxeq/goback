@@ -13,6 +13,7 @@ Grouping:
   (?!re)         negative lookahead; non-capturing
   (?<=re)        lookbehind; non-capturing
   (?<!re)        negative lookbehind; non-capturing
+  (?{func})      function call; non-capturing
   (?#comment)    comment
 
 Repetitions:
@@ -30,7 +31,7 @@ Back reference:
   \k{Name}       refer to named capturing
 
 
-Lookbehind limitation
+Lookbehind limitations
 
 Lookbehind and negative lookbehind only support expressions
 that have deterministic matching length.

@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"regexp/syntax"
 	"strconv"
+	"strings"
 	"unicode"
 	"unicode/utf8"
 )
@@ -116,6 +117,18 @@ func (p *parser) group(runes []rune, flags syntax.Flags) node {
 			indexed = false
 			wrapper = wrapperLookahead
 			r = r[2:]
+		case r[1] == '{':
+			if len(runes) <= 3 || runes[len(runes)-1] != '}' {
+				panic(newErrorRunes(syntax.ErrInvalidPerlOp, exp))
+			}
+			var name []byte
+			for _, r := range runes[2 : len(runes)-1] {
+				var lit [utf8.UTFMax]byte
+				l := utf8.EncodeRune(lit[:], r)
+				name = append(name, lit[:l]...)
+			}
+			return funcNode{Name: strings.TrimSpace(string(name))}
+
 		case len(r) >= 3 && r[1] == '<' && r[2] == '=':
 			indexed = false
 			wrapper = wrapperLookbehind
@@ -980,7 +993,7 @@ func (p *parser) concatAlternations(nodes []node) []node {
 			res = append(res, groupNode{N: g})
 		}
 	}
-	uniq := make([]node,0,len(res))
+	uniq := make([]node, 0, len(res))
 loop:
 	for _, n := range res {
 		for _, d := range uniq {

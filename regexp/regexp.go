@@ -218,7 +218,16 @@ type Regexp interface {
 
 	// String returns the source text used to compile the regular expression.
 	String() string
+
+	// Funcs adds the elements of the argument map to the template's function map.
+	Funcs(funcMap syntax.FuncMap)
 }
+
+type reg struct {
+	*regexp.Regexp
+}
+
+func (r *reg) Funcs(funcMap syntax.FuncMap) {}
 
 // Compile parses a regular expression and returns, if successful,
 // a Regexp object that can be used to match against text.
@@ -230,7 +239,10 @@ func Compile(expr string) (Regexp, error) {
 	if ext {
 		return r, nil
 	}
-	return regexp.Compile(ignoreComments(expr))
+	re, err := regexp.Compile(ignoreComments(expr))
+	return &reg{
+		Regexp: re,
+	}, err
 }
 
 func compile(expr string) (Regexp, error) {

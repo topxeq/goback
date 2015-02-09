@@ -70,3 +70,30 @@ re := regexp.MustCompile(`(?<=a[0-9]{3,5})a`)
 fmt.Println(re.MatchString("a12a"))     // false
 fmt.Println(re.MatchString("a12345a"))  // true
 ```
+
+### Function
+
+```go
+re := regexp.MustCompile(`(\d+)\+(\d+)=(?{add})`)
+
+re.Funcs(syntax.FuncMap{
+	"add": func(ctx syntax.Context) interface{} {
+		lhs, err := strconv.Atoi(string(ctx.Data[ctx.Matches[1][0]:ctx.Matches[1][1]]))
+		if err != nil {
+			return -1
+		}
+		rhs, err := strconv.Atoi(string(ctx.Data[ctx.Matches[2][0]:ctx.Matches[2][1]]))
+		if err != nil {
+			return -1
+		}
+		answer := strconv.Itoa(lhs + rhs)
+		if bytes.HasPrefix(ctx.Data[ctx.Cursor:], []byte(answer)) {
+			return len(answer)
+		}
+		return -1
+	},
+})
+
+fmt.Println(re.MatchString("12+10=22")) // true
+fmt.Println(re.MatchString("1+1=5"))    // false
+```
