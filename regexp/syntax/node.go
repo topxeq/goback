@@ -253,6 +253,11 @@ func (n repeatNode) Fiber(i input) fiber {
 		}
 	}
 
+	f.nodes = make([]node, max)
+	for i := range f.nodes {
+		f.nodes[i] = n.N
+	}
+
 	if max < f.node.Min {
 		f.s = 0
 		f.e = 0
@@ -289,6 +294,7 @@ func (n repeatNode) MinMax() (int, int) {
 type repeatNodeFiber struct {
 	I         input
 	node      repeatNode
+	nodes     []node
 	s, e, suc int
 	cnt       int
 	group     fiber
@@ -315,11 +321,7 @@ loop:
 		}
 
 		if f.group == nil {
-			nodes := make([]node, f.cnt)
-			for i := range nodes {
-				nodes[i] = f.node.N
-			}
-			n := groupNode{N: nodes}
+			n := groupNode{N: f.nodes[:f.cnt]}
 			f.group = n.Fiber(f.I.Substr(0, f.I.sub))
 		}
 
