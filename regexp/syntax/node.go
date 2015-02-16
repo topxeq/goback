@@ -80,6 +80,7 @@ type node interface {
 	Fiber(i input) fiber
 	IsExtended() bool
 	MinMax() (int, int)
+	LiteralPrefix() ([]byte, bool)
 }
 
 type minmax [2]int
@@ -100,6 +101,10 @@ func (n flagNode) IsExtended() bool {
 
 func (n flagNode) MinMax() (int, int) {
 	return 0, 0
+}
+
+func (n flagNode) LiteralPrefix() ([]byte, bool) {
+	return nil, false
 }
 
 // groupNode represents a group expression: /([exp])/
@@ -143,6 +148,23 @@ func (n groupNode) IsExtended() bool {
 
 func (n groupNode) IsAnonymous() bool {
 	return n.Index == 0 && len(n.Name) == 0
+}
+
+func (n groupNode) LiteralPrefix() ([]byte, bool) {
+	if len(n.N) == 0 {
+		return nil, true
+	}
+	var b []byte
+	comp := true
+	for _, e := range n.N {
+		p, c := e.LiteralPrefix()
+		b = append(b, p...)
+		if !c {
+			comp = false
+			break
+		}
+	}
+	return b, comp
 }
 
 func (n groupNode) MinMax() (int, int) {
@@ -314,6 +336,20 @@ func (n repeatNode) IsExtended() bool {
 	return n.Atomic || n.N.IsExtended()
 }
 
+func (n repeatNode) LiteralPrefix() ([]byte, bool) {
+	if n.Min == 0 {
+		if n.Max == 0 {
+			return nil, true
+		}
+		return nil, false
+	}
+	p, comp := n.N.LiteralPrefix()
+	if !comp {
+		return p, false
+	}
+	return bytes.Repeat(p, n.Min), (n.Min == n.Max)
+}
+
 func (n repeatNode) MinMax() (int, int) {
 	min, max := n.N.MinMax()
 	rmin := n.Min * min
@@ -404,6 +440,38 @@ func (n alterNode) IsExtended() bool {
 	return false
 }
 
+func (n alterNode) LiteralPrefix() ([]byte, bool) {
+	if len(n.N) == 0 {
+		return nil, false
+	}
+	var b [][]byte
+	minlen := -1
+	for _, e := range n.N {
+		if e == nil {
+			minlen = 0
+		} else {
+			p, _ := e.LiteralPrefix()
+			b = append(b, p)
+			if minlen < 0 || minlen > len(p) {
+				minlen = len(p)
+			}
+		}
+	}
+	if minlen < 0 {
+		minlen = 0
+	}
+	i := 0
+loop:
+	for ; i < minlen; i++ {
+		for _, p := range b {
+			if !bytes.HasPrefix(p, b[0][:i]) {
+				break loop
+			}
+		}
+	}
+	return b[0][:i], false
+}
+
 func (n alterNode) MinMax() (int, int) {
 	amin := -1
 	amax := 0
@@ -461,6 +529,10 @@ func (n charNode) IsExtended() bool {
 	return false
 }
 
+func (n charNode) LiteralPrefix() ([]byte, bool) {
+	return nil, false
+}
+
 func (n charNode) MinMax() (int, int) {
 	return 1, utf8.UTFMax
 }
@@ -508,6 +580,13 @@ func (n literalNode) IsExtended() bool {
 	return false
 }
 
+func (n literalNode) LiteralPrefix() ([]byte, bool) {
+	if n.Flags&syntax.FoldCase != 0 {
+		return nil, false
+	}
+	return n.L, true
+}
+
 func (n literalNode) MinMax() (int, int) {
 	return len(n.L), len(n.L)
 }
@@ -549,6 +628,10 @@ func (n beginNode) IsExtended() bool {
 	return false
 }
 
+func (n beginNode) LiteralPrefix() ([]byte, bool) {
+	return nil, true
+}
+
 func (n beginNode) MinMax() (int, int) {
 	return 0, 0
 }
@@ -586,6 +669,10 @@ func (n endNode) IsExtended() bool {
 	return false
 }
 
+func (n endNode) LiteralPrefix() ([]byte, bool) {
+	return nil, true
+}
+
 func (n endNode) MinMax() (int, int) {
 	return 0, 0
 }
@@ -619,6 +706,10 @@ func (n wordBoundaryNode) Fiber(i input) fiber {
 
 func (n wordBoundaryNode) IsExtended() bool {
 	return false
+}
+
+func (n wordBoundaryNode) LiteralPrefix() ([]byte, bool) {
+	return nil, true
 }
 
 func (n wordBoundaryNode) MinMax() (int, int) {
@@ -661,6 +752,10 @@ func (n backRefNode) Fiber(i input) fiber {
 
 func (n backRefNode) IsExtended() bool {
 	return true
+}
+
+func (n backRefNode) LiteralPrefix() ([]byte, bool) {
+	return nil, false
 }
 
 func (n backRefNode) MinMax() (int, int) {
@@ -714,6 +809,10 @@ func (n lookaheadNode) IsExtended() bool {
 	return true
 }
 
+func (n lookaheadNode) LiteralPrefix() ([]byte, bool) {
+	return nil, false
+}
+
 func (n lookaheadNode) MinMax() (int, int) {
 	return 0, -1
 }
@@ -746,6 +845,10 @@ func (n lookbehindNode) Fiber(i input) fiber {
 
 func (n lookbehindNode) IsExtended() bool {
 	return true
+}
+
+func (n lookbehindNode) LiteralPrefix() ([]byte, bool) {
+	return nil, false
 }
 
 func (n lookbehindNode) MinMax() (int, int) {
@@ -804,6 +907,10 @@ func (n funcNode) Fiber(i input) fiber {
 
 func (n funcNode) IsExtended() bool {
 	return true
+}
+
+func (n funcNode) LiteralPrefix() ([]byte, bool) {
+	return nil, false
 }
 
 func (n funcNode) MinMax() (int, int) {

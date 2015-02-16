@@ -38,6 +38,13 @@ func (re *regexp) Find(b []byte) []byte {
 }
 
 func (re *regexp) FindIndex(b []byte) []int {
+	p, comp := re.literalPrefix()
+	i := bytes.Index(b, p)
+	if i < 0 {
+		return nil
+	} else if comp {
+		return []int{i, i + len(p)}
+	}
 	loc := re.FindSubmatchIndex(b)
 	if len(loc) == 0 {
 		return nil
@@ -60,6 +67,15 @@ func (re *regexp) FindSubmatchIndex(b []byte) []int {
 
 func (re *regexp) findSubmatchIndex(b []byte, f int) []int {
 	offset := f
+
+	p, _ := re.literalPrefix()
+	i := bytes.Index(b[offset:], p)
+	if i < 0 {
+		return nil
+	} else {
+		offset += i
+	}
+
 	for {
 		f := re.root.Fiber(input{
 			b: b[offset:],
@@ -378,8 +394,12 @@ func (re *regexp) SubexpNames() []string {
 }
 
 func (re *regexp) LiteralPrefix() (prefix string, complete bool) {
-	// TODO: calculate literal prefix
-	return "", false
+	b, comp := re.literalPrefix()
+	return string(b), comp
+}
+
+func (re *regexp) literalPrefix() (prefix []byte, complete bool) {
+	return re.root.LiteralPrefix()
 }
 
 func (re *regexp) Longest() {
