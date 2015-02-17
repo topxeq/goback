@@ -198,6 +198,20 @@ func BenchmarkLiteral(b *testing.B) {
 	}
 }
 
+func BenchmarkLiteralBuiltin(b *testing.B) {
+	data, err := getBenchmarkData()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	r := MustCompile(`アーサー`)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		r.FindAllSubmatchIndex(data, -1)
+	}
+}
+
 func BenchmarkAlternation(b *testing.B) {
 	data, err := getBenchmarkData()
 	if err != nil {
@@ -205,6 +219,20 @@ func BenchmarkAlternation(b *testing.B) {
 	}
 
 	r := mustCompile(`(?i)arthur|アーサー`)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		r.FindAllSubmatchIndex(data, -1)
+	}
+}
+
+func BenchmarkAlternationBuiltin(b *testing.B) {
+	data, err := getBenchmarkData()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	r := MustCompile(`(?i)arthur|アーサー`)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -226,6 +254,20 @@ func BenchmarkHiragana(b *testing.B) {
 	}
 }
 
+func BenchmarkHiraganaBuiltin(b *testing.B) {
+	data, err := getBenchmarkData()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	r := MustCompile(`[\\p{Hiragana}]+`)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		r.FindAllSubmatchIndex(data, -1)
+	}
+}
+
 func BenchmarkURL(b *testing.B) {
 	data, err := getBenchmarkData()
 	if err != nil {
@@ -233,6 +275,20 @@ func BenchmarkURL(b *testing.B) {
 	}
 
 	r := mustCompile(`([a-zA-Z][a-zA-Z0-9]*)://([^ /]+)(/[^ ]*)?`)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		r.FindAllSubmatchIndex(data, -1)
+	}
+}
+
+func BenchmarkURLBuiltin(b *testing.B) {
+	data, err := getBenchmarkData()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	r := MustCompile(`([a-zA-Z][a-zA-Z0-9]*)://([^ /]+)(/[^ ]*)?`)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
