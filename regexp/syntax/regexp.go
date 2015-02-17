@@ -68,12 +68,15 @@ func (re *regexp) FindSubmatchIndex(b []byte) []int {
 func (re *regexp) findSubmatchIndex(b []byte, f int) []int {
 	offset := f
 
-	p, _ := re.literalPrefix()
+	p, comp := re.literalPrefix()
 	i := bytes.Index(b[offset:], p)
 	if i < 0 {
 		return nil
 	} else {
 		offset += i
+		if comp && re.NumSubexp() == 0 {
+			return []int{offset, offset + len(p)}
+		}
 	}
 
 	for {

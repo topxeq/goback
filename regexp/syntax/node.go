@@ -709,7 +709,7 @@ func (n wordBoundaryNode) IsExtended() bool {
 }
 
 func (n wordBoundaryNode) LiteralPrefix() ([]byte, bool) {
-	return nil, true
+	return nil, false
 }
 
 func (n wordBoundaryNode) MinMax() (int, int) {
