@@ -33,6 +33,13 @@ func AssertBuiltIn(t *testing.T, exp, str string) {
 		t.Errorf("%#q.FindSubmatchIndex(%#q) = %v, want %v", exp, str, rm, gm)
 	}
 
+	rf := r.FindStringIndex(str)
+	gf := g.FindStringIndex(str)
+
+	if !reflect.DeepEqual(gf, rf) {
+		t.Errorf("%#q.FindStringIndex(%#q) = %v, want %v", exp, str, rf, gf)
+	}
+
 	rs := r.Split(str, -1)
 	gs := g.Split(str, -1)
 	if !reflect.DeepEqual(rs, gs) {
