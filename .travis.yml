@@ -1,4 +1,5 @@
 language: go
 
 script:
- - go test -v ./regexp
+ - cd regexp; go test -v -bench .
+ 
