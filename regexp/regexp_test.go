@@ -169,20 +169,37 @@ func TestExtended(t *testing.T) {
 	}
 }
 
-func BenchmarkLiteral(b *testing.B) {
-
+func getBenchmarkData() ([]byte, error) {
 	file, err := os.Open("./_testdata/アーサー王物語.txt.gz")
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	defer file.Close()
 
 	gz, err := gzip.NewReader(file)
 	if err != nil {
+		return nil, err
+	}
+
+	return ioutil.ReadAll(gz)
+}
+
+func BenchmarkLiteral(b *testing.B) {
+	data, err := getBenchmarkData()
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	data, err := ioutil.ReadAll(gz)
+	r := mustCompile(`アーサー`)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		r.FindAllSubmatchIndex(data, -1)
+	}
+}
+
+func BenchmarkAlternation(b *testing.B) {
+	data, err := getBenchmarkData()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -196,19 +213,7 @@ func BenchmarkLiteral(b *testing.B) {
 }
 
 func BenchmarkHiragana(b *testing.B) {
-
-	file, err := os.Open("./_testdata/アーサー王物語.txt.gz")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	gz, err := gzip.NewReader(file)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	data, err := ioutil.ReadAll(gz)
+	data, err := getBenchmarkData()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -222,19 +227,7 @@ func BenchmarkHiragana(b *testing.B) {
 }
 
 func BenchmarkURL(b *testing.B) {
-
-	file, err := os.Open("./_testdata/アーサー王物語.txt.gz")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	gz, err := gzip.NewReader(file)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	data, err := ioutil.ReadAll(gz)
+	data, err := getBenchmarkData()
 	if err != nil {
 		log.Fatal(err)
 	}
