@@ -17,15 +17,6 @@ func (m reverseMatcher) Match(r rune, flags syntax.Flags) bool {
 	return !m.M.Match(r, flags)
 }
 
-type anyMatcher struct{}
-
-func (m anyMatcher) Match(r rune, flags syntax.Flags) bool {
-	if flags&syntax.DotNL == 0 && r == '\n' {
-		return false
-	}
-	return true
-}
-
 type unicodeMatcher struct {
 	R *unicode.RangeTable
 }

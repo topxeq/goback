@@ -278,6 +278,108 @@ mainloop:
 	return output{}, errDeadFiber
 }
 
+type anyCharRepeatNode struct {
+	Flags     syntax.Flags
+	Min, Max  int
+	Reluctant bool
+	Atomic    bool
+}
+
+func (n anyCharRepeatNode) IsExtended() bool {
+	return n.Atomic
+}
+
+func (n anyCharRepeatNode) LiteralPrefix() ([]byte, bool) {
+	return nil, false
+}
+
+func (n anyCharRepeatNode) MinMax() (int, int) {
+	max := -1
+	if n.Max >= 0 {
+		max = utf8.UTFMax * n.Max
+	}
+	return 1 * n.Min, max
+}
+
+func (n anyCharRepeatNode) Fiber(i input) fiber {
+	return &anyCharRepeatNodeFiber{I: i, node: n}
+}
+
+type anyCharRepeatNodeFiber struct {
+	I      input
+	node   anyCharRepeatNode
+	b      []byte
+	cnt    int
+	runes  int
+	offset int
+	fixed  bool
+}
+
+func (f *anyCharRepeatNodeFiber) Resume() (output, error) {
+	if f.fixed {
+		return output{}, errDeadFiber
+	}
+	if f.cnt == 0 {
+		f.b = f.I.b
+		if f.node.Flags&syntax.DotNL == 0 {
+			i := bytes.IndexByte(f.b, '\n')
+			if i >= 0 {
+				f.b = f.b[:i]
+			}
+		}
+		if f.node.Reluctant {
+			for i := 0; i < f.node.Min; i++ {
+				_, n := utf8.DecodeRune(f.b[f.offset:])
+				if n == 0 {
+					break
+				}
+				f.offset += n
+				f.runes++
+			}
+		} else {
+			if f.node.Max < 0 {
+				f.runes = len(bytes.Runes(f.b))
+				f.offset = len(f.b)
+			} else {
+				for len(f.b[f.offset:]) > 0 && f.runes < f.node.Max {
+					_, n := utf8.DecodeRune(f.b[f.offset:])
+					if n == 0 {
+						break
+					}
+					f.offset += n
+					f.runes++
+				}
+			}
+		}
+		f.cnt++
+	}
+
+	if f.runes < f.node.Min || (f.node.Max >= 0 && f.runes > f.node.Max) {
+		return output{}, errDeadFiber
+	}
+
+	if f.node.Atomic {
+		f.fixed = true
+	}
+	o := output{offset: f.offset, sub: f.I.sub}
+	if f.node.Reluctant {
+		_, n := utf8.DecodeRune(f.b[f.offset:])
+		if n == 0 {
+			f.fixed = true
+		}
+		f.offset += n
+		f.runes++
+	} else {
+		_, n := utf8.DecodeLastRune(f.b[:f.offset])
+		if n == 0 {
+			f.fixed = true
+		}
+		f.offset -= n
+		f.runes--
+	}
+	return o, nil
+}
+
 // repeatNode represents a repeat expression: /[exp]+/
 type repeatNode struct {
 	N         node
@@ -509,6 +611,47 @@ func (f *alterNodeFiber) Resume() (output, error) {
 			return output{offset: o.offset, sub: o.sub}, nil
 		} else {
 			f.cnt++
+		}
+	}
+	return output{}, errDeadFiber
+}
+
+type anyCharNode struct {
+	Flags    syntax.Flags
+	Reversed bool
+}
+
+func (n anyCharNode) Fiber(i input) fiber {
+	return &anyCharNodeFiber{I: i, node: n}
+}
+
+func (n anyCharNode) IsExtended() bool {
+	return false
+}
+
+func (n anyCharNode) LiteralPrefix() ([]byte, bool) {
+	return nil, false
+}
+
+func (n anyCharNode) MinMax() (int, int) {
+	return 1, utf8.UTFMax
+}
+
+type anyCharNodeFiber struct {
+	I    input
+	node anyCharNode
+	cnt  int
+}
+
+func (f *anyCharNodeFiber) Resume() (output, error) {
+	if f.cnt == 0 {
+		f.cnt++
+		r, size := utf8.DecodeRune(f.I.b)
+		if f.node.Flags&syntax.DotNL == 0 && r == '\n' {
+			return output{}, errDeadFiber
+		}
+		if size > 0 {
+			return output{offset: size}, nil
 		}
 	}
 	return output{}, errDeadFiber

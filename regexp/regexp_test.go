@@ -191,6 +191,34 @@ func getBenchmarkData() ([]byte, error) {
 	return ioutil.ReadAll(gz)
 }
 
+func BenchmarkAny(b *testing.B) {
+	data, err := getBenchmarkData()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	r := mustCompile(`.*`)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		r.FindAllSubmatchIndex(data, -1)
+	}
+}
+
+func BenchmarkAnyBuiltin(b *testing.B) {
+	data, err := getBenchmarkData()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	r := MustCompile(`.*`)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		r.FindAllSubmatchIndex(data, -1)
+	}
+}
+
 func BenchmarkLiteral(b *testing.B) {
 	data, err := getBenchmarkData()
 	if err != nil {

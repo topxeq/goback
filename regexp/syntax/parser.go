@@ -388,11 +388,8 @@ func (p *parser) group(runes []rune, flags syntax.Flags) node {
 				meta = true
 				r = r[1:]
 			case '.':
-				n := charNode{
+				n := anyCharNode{
 					Flags: flags,
-					Matcher: []charNodeMatcher{
-						anyMatcher{},
-					},
 				}
 				r = r[1:]
 				g.N = append(g.N, n)
@@ -942,7 +939,17 @@ func (p *parser) concatRepetitions(nodes []node) []node {
 				panic(newErrorRunes(syntax.ErrInvalidRepeatOp, append(nrn.Exp, rn.Exp...)))
 			}
 			rn.N = r[len(r)-1]
-			r[len(r)-1] = rn
+			if any, ok := rn.N.(anyCharNode); ok {
+				r[len(r)-1] = anyCharRepeatNode{
+					Flags:     any.Flags,
+					Min:       rn.Min,
+					Max:       rn.Max,
+					Reluctant: rn.Reluctant,
+					Atomic:    rn.Atomic,
+				}
+			} else {
+				r[len(r)-1] = rn
+			}
 			continue
 		}
 		r = append(r, n)
