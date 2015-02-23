@@ -247,6 +247,34 @@ func BenchmarkLiteralBuiltin(b *testing.B) {
 	}
 }
 
+func BenchmarkFirstSpace(b *testing.B) {
+	data, err := getBenchmarkData()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	r := mustCompile(`^\s*`)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		r.FindAllSubmatchIndex(data, -1)
+	}
+}
+
+func BenchmarkFirstSpaceBuiltin(b *testing.B) {
+	data, err := getBenchmarkData()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	r := MustCompile(`^\s*`)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		r.FindAllSubmatchIndex(data, -1)
+	}
+}
+
 func BenchmarkAlternation(b *testing.B) {
 	data, err := getBenchmarkData()
 	if err != nil {

@@ -7,8 +7,10 @@ import (
 	"unicode/utf8"
 )
 
-var (
-	errDeadFiber = errors.New("Resume dead fiber")
+var errDeadFiber = errors.New("Resume dead fiber")
+
+const (
+	hintFixedBeginning = iota
 )
 
 type input struct {
@@ -76,11 +78,14 @@ type fiber interface {
 	Resume() (output, error)
 }
 
+type hint map[int]interface{}
+
 type node interface {
 	Fiber(i input) fiber
 	IsExtended() bool
 	MinMax() (int, int)
 	LiteralPrefix() ([]byte, bool)
+	Hint() hint
 }
 
 type minmax [2]int
@@ -105,6 +110,10 @@ func (n flagNode) MinMax() (int, int) {
 
 func (n flagNode) LiteralPrefix() ([]byte, bool) {
 	return nil, false
+}
+
+func (n flagNode) Hint() hint {
+	return nil
 }
 
 // groupNode represents a group expression: /([exp])/
@@ -192,6 +201,15 @@ func (n groupNode) MinMax() (int, int) {
 	}
 	n.mm = &minmax{gmin, gmax}
 	return gmin, gmax
+}
+
+func (n groupNode) Hint() hint {
+	for _, e := range n.N {
+		if b, _ := e.Hint()[hintFixedBeginning].(bool); b {
+			return hint{hintFixedBeginning: true}
+		}
+	}
+	return nil
 }
 
 type groupNodeFiber struct {
@@ -303,6 +321,10 @@ func (n anyCharRepeatNode) MinMax() (int, int) {
 
 func (n anyCharRepeatNode) Fiber(i input) fiber {
 	return &anyCharRepeatNodeFiber{I: i, node: n}
+}
+
+func (n anyCharRepeatNode) Hint() hint {
+	return nil
 }
 
 type anyCharRepeatNodeFiber struct {
@@ -464,6 +486,16 @@ func (n repeatNode) MinMax() (int, int) {
 	return rmin, rmax
 }
 
+func (n repeatNode) Hint() hint {
+	if b, _ := n.N.Hint()[hintFixedBeginning].(bool); !b {
+		return nil
+	}
+	if n.Min > 0 {
+		return hint{hintFixedBeginning: true}
+	}
+	return nil
+}
+
 type repeatNodeFiber struct {
 	I         input
 	node      repeatNode
@@ -595,6 +627,21 @@ func (n alterNode) MinMax() (int, int) {
 	return amin, amax
 }
 
+func (n alterNode) Hint() hint {
+	for _, e := range n.N {
+		if e == nil {
+			return nil
+		}
+		if b, _ := e.Hint()[hintFixedBeginning].(bool); !b {
+			return nil
+		}
+	}
+	if len(n.N) > 0 {
+		return hint{hintFixedBeginning: true}
+	}
+	return nil
+}
+
 type alterNodeFiber struct {
 	I      input
 	node   alterNode
@@ -635,6 +682,10 @@ func (n anyCharNode) LiteralPrefix() ([]byte, bool) {
 
 func (n anyCharNode) MinMax() (int, int) {
 	return 1, utf8.UTFMax
+}
+
+func (n anyCharNode) Hint() hint {
+	return nil
 }
 
 type anyCharNodeFiber struct {
@@ -678,6 +729,10 @@ func (n charNode) LiteralPrefix() ([]byte, bool) {
 
 func (n charNode) MinMax() (int, int) {
 	return 1, utf8.UTFMax
+}
+
+func (n charNode) Hint() hint {
+	return nil
 }
 
 type charNodeFiber struct {
@@ -734,6 +789,10 @@ func (n literalNode) MinMax() (int, int) {
 	return len(n.L), len(n.L)
 }
 
+func (n literalNode) Hint() hint {
+	return nil
+}
+
 type literalNodeFiber struct {
 	I    input
 	node literalNode
@@ -779,6 +838,13 @@ func (n beginNode) MinMax() (int, int) {
 	return 0, 0
 }
 
+func (n beginNode) Hint() hint {
+	if n.Flags&syntax.OneLine == 0 {
+		return nil
+	}
+	return hint{hintFixedBeginning: true}
+}
+
 type beginNodeFiber struct {
 	I    input
 	node beginNode
@@ -820,6 +886,10 @@ func (n endNode) MinMax() (int, int) {
 	return 0, 0
 }
 
+func (n endNode) Hint() hint {
+	return nil
+}
+
 type endNodeFiber struct {
 	I    input
 	node endNode
@@ -857,6 +927,10 @@ func (n wordBoundaryNode) LiteralPrefix() ([]byte, bool) {
 
 func (n wordBoundaryNode) MinMax() (int, int) {
 	return 0, 0
+}
+
+func (n wordBoundaryNode) Hint() hint {
+	return nil
 }
 
 type wordBoundaryFiber struct {
@@ -916,6 +990,10 @@ func (n backRefNode) MinMax() (int, int) {
 	return 0, -1
 }
 
+func (n backRefNode) Hint() hint {
+	return nil
+}
+
 type backRefNodeFiber struct {
 	I    input
 	node backRefNode
@@ -971,6 +1049,10 @@ func (n lookaheadNode) MinMax() (int, int) {
 	return 0, -1
 }
 
+func (n lookaheadNode) Hint() hint {
+	return nil
+}
+
 type lookaheadNodeFiber struct {
 	I    input
 	node lookaheadNode
@@ -1007,6 +1089,10 @@ func (n lookbehindNode) LiteralPrefix() ([]byte, bool) {
 
 func (n lookbehindNode) MinMax() (int, int) {
 	return 0, -1
+}
+
+func (n lookbehindNode) Hint() hint {
+	return nil
 }
 
 type lookbehindNodeFiber struct {
@@ -1069,6 +1155,10 @@ func (n funcNode) LiteralPrefix() ([]byte, bool) {
 
 func (n funcNode) MinMax() (int, int) {
 	return 0, -1
+}
+
+func (n funcNode) Hint() hint {
+	return nil
 }
 
 type funcNodeFiber struct {

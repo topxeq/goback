@@ -68,6 +68,11 @@ func (re *regexp) FindSubmatchIndex(b []byte) []int {
 func (re *regexp) findSubmatchIndex(b []byte, f int) []int {
 	offset := f
 
+	fixed := false
+	if b, _ := re.root.Hint()[hintFixedBeginning].(bool); b {
+		fixed = true
+	}
+
 	p, comp := re.literalPrefix()
 	i := bytes.Index(b[offset:], p)
 	if i < 0 {
@@ -108,7 +113,7 @@ func (re *regexp) findSubmatchIndex(b []byte, f int) []int {
 			}
 			return loc
 		}
-		if len(b[offset:]) == 0 {
+		if fixed || len(b[offset:]) == 0 {
 			break
 		}
 		_, s := utf8.DecodeRune(b[offset:])
