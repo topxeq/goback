@@ -134,3 +134,30 @@
 
 @"((?P<x>正)(?:現)表現)"
 @"\\Q...\\E.+"
+
+@`From http://golang.org/src/regexp/testdata/basic.dat`
+@`abracadabra$`
+"abracadabracadabra"
+@`XXXXXX`
+"..XXXXXX"
+@`a...b`
+"abababbb"
+@`\)`
+"()"
+@`a]`
+"a]a"
+@`}`
+"}"
+@`\}`
+"}"
+@`\]`
+"]"
+@`]`
+"]"
+@`]`
+"]"
+@`{`
+"{"
+@`}`
+"}"
+@`M[ou]'?am+[ae]r .*([AEae]l[- ])?[GKQ]h?[aeu]+([dtz][dhz]?)+af[iy]`
