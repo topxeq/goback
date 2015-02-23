@@ -869,8 +869,19 @@ func (f *wordBoundaryFiber) Resume() (output, error) {
 	if f.cnt == 0 {
 		f.cnt++
 		match := false
-		if len(f.I.b) > 0 && f.I.begin > 0 && isASCIIWord(rune(f.I.b[0])) != isASCIIWord(rune(f.I.o[f.I.begin-1])) {
-			match = true
+		if len(f.I.b) > 0 {
+			if f.I.begin > 0 && isASCIIWord(rune(f.I.b[0])) != isASCIIWord(rune(f.I.o[f.I.begin-1])) {
+				match = true
+			}
+			if f.I.begin == 0 && isASCIIWord(rune(f.I.b[0])) {
+				match = true
+			}
+		}
+		if len(f.I.o) > 0 && f.I.begin == len(f.I.o) {
+			r, _ := utf8.DecodeLastRune(f.I.o)
+			if isASCIIWord(r) {
+				match = true
+			}
 		}
 		if f.node.Reversed {
 			match = !match
