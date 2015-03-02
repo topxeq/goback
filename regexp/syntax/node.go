@@ -598,7 +598,7 @@ func (n alterNode) LiteralPrefix() ([]byte, bool) {
 loop:
 	for ; i < minlen; i++ {
 		for _, p := range b {
-			if !bytes.HasPrefix(p, b[0][:i]) {
+			if !bytes.HasPrefix(p, b[0][:i+1]) {
 				break loop
 			}
 		}
