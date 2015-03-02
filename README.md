@@ -79,10 +79,11 @@ re := regexp.MustCompileFreeSpacing(`
 	[0-9]+    # one or more digits
 	[a-zA-Z]* # zero or more alphabets
 	\#        # literal '#'
+	[ ]       # literal ' '
 
 `)
-fmt.Println(re.MatchString("1234#"))     // true
-fmt.Println(re.MatchString("12345abc"))  // false
+fmt.Println(re.MatchString("1234# "))     // true
+fmt.Println(re.MatchString("12345abc "))  // false
 ```
 
 ### Function
