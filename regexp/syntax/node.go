@@ -831,7 +831,7 @@ func (n beginNode) IsExtended() bool {
 }
 
 func (n beginNode) LiteralPrefix() ([]byte, bool) {
-	return nil, true
+	return nil, false
 }
 
 func (n beginNode) MinMax() (int, int) {

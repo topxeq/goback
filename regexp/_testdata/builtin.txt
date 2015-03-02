@@ -160,4 +160,5 @@
 "{"
 @`}`
 "}"
+@`^a`
 @`M[ou]'?am+[ae]r .*([AEae]l[- ])?[GKQ]h?[aeu]+([dtz][dhz]?)+af[iy]`
