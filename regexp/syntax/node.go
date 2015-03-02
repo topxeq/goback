@@ -282,7 +282,7 @@ mainloop:
 						}
 						return output{
 							offset: len(b),
-							sub:    o.sub.Merge(s),
+							sub:    s.Merge(o.sub),
 						}, nil
 					}
 					f.stack[i] = &o
