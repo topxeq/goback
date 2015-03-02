@@ -343,8 +343,10 @@ func ignoreCommentsAndSpaces(expr string) string {
 loop:
 	for _, line := range strings.Split(expr, "\n") {
 		meta := false
+		charClass := false
 		for _, c := range line {
 			if meta {
+				charClass = false
 				switch c {
 				case '\\':
 					res += "\\"
@@ -357,12 +359,24 @@ loop:
 				}
 				meta = false
 			} else {
+				if charClass {
+					if c == ' ' {
+						res += fmt.Sprintf("%c", c)
+					}
+					charClass = false
+				} else {
+					if c == '[' {
+						charClass = true
+					}
+				}
 				switch c {
 				case '\\':
 					meta = true
 				case ' ':
 				case '\v':
 				case '\t':
+				case '\f':
+				case '\r':
 				case '[':
 					res += "["
 				case '#':

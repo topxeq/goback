@@ -85,10 +85,11 @@ func Example_FreeSpacing() {
 		[0-9]+    # one or more digits
 		[a-zA-Z]* # zero or more alphabets
 		\#        # literal '#'
+		[ ]       # literal ' '
 
 	`)
-	fmt.Println(re.MatchString("1234#"))
-	fmt.Println(re.MatchString("12345abc"))
+	fmt.Println(re.MatchString("1234# "))
+	fmt.Println(re.MatchString("12345abc "))
 	// Output:
 	// true
 	// false
