@@ -1,16 +1,13 @@
 goback
 ======
 
-[![Build Status](https://travis-ci.org/h2so5/goback.svg)](https://travis-ci.org/h2so5/goback)
-[![GoDoc](https://godoc.org/github.com/h2so5/goback/regexp?status.svg)](http://godoc.org/github.com/h2so5/goback/regexp)
-
 goback provides extended regexp syntax, such as Back reference.
 
 The implementation does **NOT** guarantee linear processing time.
 
 ## Syntax
 
-See http://godoc.org/github.com/h2so5/goback/regexp/syntax
+See http://godoc.org/github.com/Upliner/goback/regexp/syntax
 
 ## Examples
 
