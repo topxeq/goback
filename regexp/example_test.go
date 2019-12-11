@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/h2so5/goback/regexp"
-	"github.com/h2so5/goback/regexp/syntax"
+	"github.com/Upliner/goback/regexp"
+	"github.com/Upliner/goback/regexp/syntax"
 )
 
 func Example() {
