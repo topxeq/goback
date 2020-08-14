@@ -7,7 +7,7 @@ The implementation does **NOT** guarantee linear processing time.
 
 ## Syntax
 
-See http://godoc.org/github.com/Upliner/goback/regexp/syntax
+See http://godoc.org/github.com/topxeq/goback/regexp/syntax
 
 ## Examples
 
@@ -18,7 +18,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/h2so5/goback/regexp"
+	"github.com/topxeq/goback/regexp"
 )
 
 func main() {
